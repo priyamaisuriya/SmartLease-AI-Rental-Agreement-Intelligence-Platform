@@ -1,14 +1,47 @@
-import React, { useState } from 'react';
-import { Search, Filter, Eye, Archive, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Eye, Archive, Star, Loader2 } from 'lucide-react';
 import DataTable from '../../components/admin/DataTable';
 import StatusBadge from '../../components/admin/StatusBadge';
-import { feedbackData } from '../../data/adminMockData';
+import api from '../../services/api';
 
 const FeedbackManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [feedbackData, setFeedbackData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+
+  const fetchFeedback = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/feedback');
+      setFeedbackData(res.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch feedback:', err);
+      setError('Failed to load feedback data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleArchive = async (id) => {
+    try {
+      await api.patch(`/admin/feedback/${id}/status`, { status: 'archived' });
+      setFeedbackData(prev => 
+        prev.map(f => f._id === id ? { ...f, status: 'archived' } : f)
+      );
+    } catch (err) {
+      console.error('Failed to archive feedback:', err);
+      alert('Failed to archive feedback.');
+    }
+  };
 
   const filteredData = feedbackData.filter(item => 
-    item.user.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (item.user?.name || item.userName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     item.feedback.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -16,7 +49,7 @@ const FeedbackManagement = () => {
     { 
       header: 'User', 
       accessor: 'user',
-      render: (row) => <span className="font-medium text-ink">{row.user}</span>
+      render: (row) => <span className="font-medium text-ink">{row.user?.name || row.userName || 'Anonymous'}</span>
     },
     { 
       header: 'Rating', 
@@ -38,7 +71,11 @@ const FeedbackManagement = () => {
       accessor: 'feedback',
       render: (row) => <span className="text-sm truncate block max-w-xs">{row.feedback}</span>
     },
-    { header: 'Date', accessor: 'date' },
+    { 
+      header: 'Date', 
+      accessor: 'createdAt',
+      render: (row) => <span>{new Date(row.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+    },
     { 
       header: 'Status', 
       accessor: 'status',
@@ -52,7 +89,12 @@ const FeedbackManagement = () => {
           <button className="p-1 text-text-muted hover:text-lease-600 transition-colors" title="View Details">
             <Eye className="w-4 h-4" />
           </button>
-          <button className="p-1 text-text-muted hover:text-ink transition-colors" title="Archive">
+          <button 
+            className={`p-1 transition-colors ${row.status === 'archived' ? 'text-ink-muted opacity-50 cursor-not-allowed' : 'text-text-muted hover:text-ink'}`}
+            title="Archive"
+            onClick={() => row.status !== 'archived' && handleArchive(row._id)}
+            disabled={row.status === 'archived'}
+          >
             <Archive className="w-4 h-4" />
           </button>
         </div>
@@ -89,7 +131,17 @@ const FeedbackManagement = () => {
           </div>
         </div>
 
-        <DataTable columns={columns} data={filteredData} />
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 text-lease-600 animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 text-bad-600">
+            {error}
+          </div>
+        ) : (
+          <DataTable columns={columns} data={filteredData} />
+        )}
       </div>
     </div>
   );

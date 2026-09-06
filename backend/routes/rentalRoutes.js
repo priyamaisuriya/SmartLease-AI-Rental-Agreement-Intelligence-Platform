@@ -10,7 +10,8 @@ const {
     getMyRentals,
     getLandlordRentals,
     getRentalById,
-    cancelRental
+    cancelRental,
+    updateRentalStatus
 } = require('../controllers/rentalController');
 
 
@@ -71,6 +72,17 @@ router.put(
     auth,
     requirePermission('rental-cancel'),
     cancelRental
+);
+
+
+// ============================================================
+// LANDLORD — UPDATE RENTAL STATUS (APPROVE/REJECT)
+// ============================================================
+
+router.patch(
+    '/:id/status',
+    auth,
+    updateRentalStatus
 );
 
 

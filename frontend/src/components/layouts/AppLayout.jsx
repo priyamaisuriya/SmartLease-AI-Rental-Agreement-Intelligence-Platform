@@ -73,6 +73,12 @@ const NAV_ITEMS = [
     section: 'Account',
   },
   {
+    id: '/feedback',
+    label: 'Feedback',
+    icon: MessageSquare,
+    section: 'Account',
+  },
+  {
     id: '/profile',
     label: 'Profile / Settings',
     icon: User,
@@ -83,6 +89,22 @@ const NAV_ITEMS = [
 const AppLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: 'Agreement Ready to Sign',
+      message: 'Your rental agreement for "Furnished 1BHK" is ready.',
+      time: '1 hour ago'
+    },
+    {
+      id: 2,
+      title: 'Request Approved',
+      message: 'Your rental request for "kkk" was approved.',
+      time: '1 day ago'
+    }
+  ]);
 
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -340,11 +362,61 @@ const AppLayout = () => {
           <div className="flex items-center gap-4">
 
             {/* Notification */}
-            <button className="relative p-2 text-text-muted hover:text-ink hover:bg-paper-card rounded-lg transition-colors">
-              <Bell className="w-5 h-5" />
+            <div className="relative">
+              <button 
+                className="relative p-2 text-text-muted hover:text-ink hover:bg-paper-card rounded-lg transition-colors"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+              >
+                <Bell className="w-5 h-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-risk-amber rounded-full border-2 border-paper"></span>
+                )}
+              </button>
 
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-risk-amber rounded-full border-2 border-paper"></span>
-            </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-border py-2 z-50">
+                  <div className="px-4 py-2 border-b border-border flex justify-between items-center">
+                    <h3 className="font-semibold text-ink">Notifications</h3>
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={() => setNotifications(([]) )}
+                        className="text-xs text-text-muted hover:text-risk-red transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto scroll-thin">
+                    {notifications.length > 0 ? (
+                      notifications.map(n => (
+                        <div key={n.id} className="group relative px-4 py-3 border-b border-border hover:bg-paper-card cursor-pointer transition-colors pr-10">
+                          <p className="text-sm text-ink font-medium">{n.title}</p>
+                          <p className="text-xs text-text-muted mt-0.5">{n.message}</p>
+                          <span className="text-[10px] text-text-faint mt-1 block">{n.time}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNotifications(notifications.filter(notif => notif.id !== n.id));
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-faint hover:text-risk-red opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Delete notification"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-6 text-center text-sm text-text-muted">
+                        No new notifications
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-4 py-2 border-t border-border text-center">
+                    <Link to="/notifications" onClick={() => setNotificationsOpen(false)} className="text-xs font-medium text-lease-600 hover:text-lease-700">View all notifications</Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Profile */}
             <div className="relative">

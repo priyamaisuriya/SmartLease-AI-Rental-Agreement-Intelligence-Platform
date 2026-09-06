@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   BrainCircuit,
@@ -60,12 +60,13 @@ const RiskCard = ({ type, title, desc, action }) => {
 
 const AgreementAnalysis = () => {
   const { agreementId } = useParams();
+  const navigate = useNavigate();
 
   const [agreement, setAgreement] = useState(null);
   const [summary, setSummary] = useState(null);
   const [risks, setRisks] = useState(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!agreementId);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [riskLoading, setRiskLoading] = useState(false);
 
@@ -315,6 +316,71 @@ const AgreementAnalysis = () => {
     { name: 'Risk', value: 35, fill: '#E8A34F' }, // warn-500
     { name: 'Safe', value: 65, fill: '#F6F7FB' }  // canvas
   ];
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center fade-in">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-paper border-t-ink"></div>
+        <p className="mt-4 text-sm font-medium text-text-muted">
+          Loading AI Analysis...
+        </p>
+      </div>
+    );
+  }
+
+  if (!agreementId) {
+    return (
+      <div className="fade-in max-w-6xl mx-auto space-y-6 pb-12">
+        <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl2 border border-border bg-white mt-10 shadow-soft">
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-lease-50 text-lease-600 mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-search"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4.268 21a2 2 0 0 0 1.727 1H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="m9 18-1.5-1.5"/><circle cx="5" cy="14" r="3"/></svg>
+          </div>
+          <h2 className="font-display text-2xl font-semibold text-ink">
+            Select an agreement to analyze
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
+            Choose an agreement from your list to view its AI summary, risk analysis, and financial details.
+          </p>
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => navigate('/landlord/agreements')}
+              className="rounded-lg bg-ink px-6 py-2.5 text-sm font-semibold text-paper shadow-sm hover:bg-ink-dark transition-colors"
+            >
+              Go to My Agreements
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !agreement) {
+    return (
+      <div className="fade-in max-w-6xl mx-auto space-y-6 pb-12">
+        <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl2 border border-border bg-white mt-10 shadow-soft">
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-bad-50 text-bad-600 mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h2 className="font-display text-2xl font-semibold text-ink">
+            Unable to load agreement
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
+            {error || 'The requested agreement could not be found.'}
+          </p>
+          <div className="mt-8 flex gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/landlord/agreements')}
+              className="rounded-lg bg-lease-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-lease-700 transition-colors"
+            >
+              Back to Agreements
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 fade-in pb-12 max-w-6xl mx-auto">

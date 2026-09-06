@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Filter, Eye, X } from 'lucide-react';
+import { Search, Filter, Eye, X, CheckCircle, Ban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import DataTable from '../../components/admin/DataTable';
@@ -55,6 +55,24 @@ const RentalRequests = () => {
   useEffect(() => {
     fetchRentals();
   }, []);
+
+  // ============================================================
+  // ACTION HANDLERS
+  // ============================================================
+
+  const handleUpdateStatus = async (rental, newStatus) => {
+    try {
+      setLoading(true);
+      await api.patch(`/rentals/${rental._id}/status`, { status: newStatus });
+      await fetchRentals();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      setError(
+        err.response?.data?.message || 'Failed to update rental status.'
+      );
+      setLoading(false);
+    }
+  };
 
   // ============================================================
   // HELPERS
@@ -265,6 +283,24 @@ const RentalRequests = () => {
 
       render: (row) => (
         <div className="flex items-center gap-2">
+          {row.status !== 'active' && (
+            <button
+              onClick={() => handleUpdateStatus(row, 'active')}
+              className="p-1 text-text-muted hover:text-green-600 transition-colors"
+              title="Approve / Activate Request"
+            >
+              <CheckCircle className="w-4 h-4" />
+            </button>
+          )}
+          {row.status !== 'cancelled' && (
+            <button
+              onClick={() => handleUpdateStatus(row, 'cancelled')}
+              className="p-1 text-text-muted hover:text-red-600 transition-colors"
+              title="Reject / Deactivate Request"
+            >
+              <Ban className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => handleView(row)}
             disabled={!getTenant(row)?._id}

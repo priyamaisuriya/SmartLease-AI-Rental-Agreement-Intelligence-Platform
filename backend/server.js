@@ -55,6 +55,12 @@ const activityLogRoutes =
 const adminReportRoutes =
   require('./routes/adminReportRoutes');
 
+const adminFeedbackRoutes =
+  require('./routes/adminFeedbackRoutes');
+
+const feedbackRoutes =
+  require('./routes/feedbackRoutes');
+
 app.use(cors());
 
 app.use(express.json());
@@ -121,6 +127,11 @@ app.use(
 );
 
 app.use(
+  '/api/feedback',
+  feedbackRoutes
+);
+
+app.use(
   '/api/rent-reminders',
   rentReminderRoutes
 );
@@ -153,6 +164,11 @@ app.use(
 app.use(
   '/api/admin/reports',
   adminReportRoutes
+);
+
+app.use(
+  '/api/admin/feedback',
+  adminFeedbackRoutes
 );
 
 app.use(

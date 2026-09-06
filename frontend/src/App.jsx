@@ -34,6 +34,7 @@ import Chat from './pages/Chat';
 import Reminders from './pages/Reminders';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
+import Feedback from './pages/Feedback';
 import Profile from './pages/Profile';
 
 // =====================================================
@@ -155,6 +156,8 @@ function App() {
             />
 
             <Route path="/reports" element={<Reports />} />
+            
+            <Route path="/feedback" element={<Feedback />} />
 
             <Route path="/profile" element={<Profile />} />
 
@@ -351,6 +354,11 @@ function App() {
             ================================ */}
 
             <Route
+              path="analysis"
+              element={<AgreementAnalysis />}
+            />
+            
+            <Route
               path="analysis/:agreementId"
               element={<AgreementAnalysis />}
             />
@@ -398,6 +406,16 @@ function App() {
             <Route
               path="notifications"
               element={<LandlordNotifications />}
+            />
+
+
+            {/* ===============================
+                FEEDBACK
+            ================================ */}
+
+            <Route
+              path="feedback"
+              element={<Feedback />}
             />
 
 

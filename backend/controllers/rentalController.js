@@ -442,3 +442,6 @@ module.exports = {
     getRentalById,
     cancelRental
 };
+
+const updateRentalStatus = async (req, res) => { try { const rental = await Rental.findById(req.params.id); if (!rental) return res.status(404).json({ message: 'Rental not found' }); const property = await Property.findById(rental.property); if (!property) return res.status(404).json({ message: 'Property not found' }); if (property.landlord.toString() !== req.user.id) return res.status(403).json({ message: 'Unauthorized' }); const { status } = req.body; if (!['active', 'cancelled', 'completed'].includes(status)) return res.status(400).json({ message: 'Invalid status' }); rental.status = status; await rental.save(); if (status === 'active') { property.status = 'rented'; await property.save(); } else if (status === 'cancelled' || status === 'completed') { if (property.status === 'rented') { property.status = 'available'; await property.save(); } } return res.json({ message: 'Rental status updated', rental }); } catch (err) { res.status(500).json({ message: 'Server error' }); } };
+module.exports.updateRentalStatus = updateRentalStatus;
