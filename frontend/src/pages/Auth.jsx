@@ -263,7 +263,7 @@ const Auth = () => {
 
             <button
               type="button"
-              className={`pb - 3 text - [14.5px] font - sans transition - colors relative ${isLogin
+              className={`pb-3 text-[14.5px] font-sans transition-colors relative ${isLogin
                 ? 'text-ink font-semibold'
                 : 'text-text-faint font-medium hover:text-ink'
                 } `}
@@ -278,7 +278,7 @@ const Auth = () => {
 
             <button
               type="button"
-              className={`pb - 3 text - [14.5px] font - sans transition - colors relative ${!isLogin
+              className={`pb-3 text-[14.5px] font-sans transition-colors relative ${!isLogin
                 ? 'text-ink font-semibold'
                 : 'text-text-faint font-medium hover:text-ink'
                 } `}
@@ -437,20 +437,20 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setRole('tenant')}
-                    className={`flex flex - col items - center gap - 1.5 py - 3 px - 1 rounded - [3px] border bg - white transition - colors ${role === 'tenant'
+                    className={`flex flex-col items-center gap-1.5 py-3 px-1 rounded-[3px] border bg-white transition-colors ${role === 'tenant'
                       ? 'border-gold bg-gold/10'
                       : 'border-border hover:border-gold-soft'
                       } `}
                   >
                     <User
-                      className={`w - 4 h - 4 ${role === 'tenant'
+                      className={`w-4 h-4 ${role === 'tenant'
                         ? 'text-gold-deep'
                         : 'text-text-faint'
                         } `}
                     />
 
                     <span
-                      className={`text - xs ${role === 'tenant'
+                      className={`text-xs ${role === 'tenant'
                         ? 'text-ink font-semibold'
                         : 'text-text-faint font-medium'
                         } `}
@@ -463,20 +463,20 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setRole('landlord')}
-                    className={`flex flex - col items - center gap - 1.5 py - 3 px - 1 rounded - [3px] border bg - white transition - colors ${role === 'landlord'
+                    className={`flex flex-col items-center gap-1.5 py-3 px-1 rounded-[3px] border bg-white transition-colors ${role === 'landlord'
                       ? 'border-gold bg-gold/10'
                       : 'border-border hover:border-gold-soft'
                       } `}
                   >
                     <Briefcase
-                      className={`w - 4 h - 4 ${role === 'landlord'
+                      className={`w-4 h-4 ${role === 'landlord'
                         ? 'text-gold-deep'
                         : 'text-text-faint'
                         } `}
                     />
 
                     <span
-                      className={`text - xs ${role === 'landlord'
+                      className={`text-xs ${role === 'landlord'
                         ? 'text-ink font-semibold'
                         : 'text-text-faint font-medium'
                         } `}

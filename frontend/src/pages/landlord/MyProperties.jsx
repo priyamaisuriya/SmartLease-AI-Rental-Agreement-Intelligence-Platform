@@ -32,7 +32,7 @@ const PropertyCard = ({ property }) => (
       <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
         <div>
           <p className="text-xs text-text-faint">Listed Rent</p>
-          <p className="font-semibold text-lease-600">₹{property.rent.toLocaleString()}<span className="text-xs text-text-muted font-normal">/mo</span></p>
+          <p className="font-semibold text-gold-deep">₹{property.rent.toLocaleString()}<span className="text-xs text-text-muted font-normal">/mo</span></p>
         </div>
         <div className="text-right">
           <p className="text-xs text-text-faint">Current Tenant</p>
@@ -44,7 +44,7 @@ const PropertyCard = ({ property }) => (
     </div>
     
     <div className="p-3 bg-paper border-t border-border grid grid-cols-4 gap-1">
-      <button className="flex items-center justify-center py-1.5 rounded hover:bg-border transition-colors text-text-muted hover:text-lease-600" title="View Details">
+      <button className="flex items-center justify-center py-1.5 rounded hover:bg-border transition-colors text-text-muted hover:text-gold-deep" title="View Details">
         <Eye className="w-4 h-4" />
       </button>
       <button className="flex items-center justify-center py-1.5 rounded hover:bg-border transition-colors text-text-muted hover:text-ink" title="Edit Property">
@@ -72,10 +72,10 @@ const MyProperties = () => {
     <div className="space-y-6 fade-in pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-ink">My Properties</h1>
-          <p className="text-text-muted mt-1">Manage and track your listed rental properties.</p>
+          <h1 className="font-serif text-[28px] font-medium text-ink m-0">My Properties</h1>
+          <p className="text-[14.5px] text-text-muted mt-1 m-0">Manage and track your listed rental properties.</p>
         </div>
-        <Link to="/landlord/properties/add" className="flex items-center justify-center gap-2 px-4 py-2 bg-lease-600 text-white rounded-lg font-medium hover:bg-lease-700 transition-colors shadow-sm w-full sm:w-auto">
+        <Link to="/landlord/properties/add" className="flex items-center justify-center gap-2 px-5 py-2.5 bg-ink text-paper rounded-[8px] font-semibold text-[14px] hover:bg-ink-dark transition-colors shadow-sm w-full sm:w-auto">
           <PlusCircle className="w-4 h-4" />
           <span>Add Property</span>
         </Link>
