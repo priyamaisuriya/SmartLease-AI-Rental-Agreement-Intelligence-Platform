@@ -40,13 +40,16 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error(
         'Failed to load current user:',
+        error.response?.status,
         error.response?.data || error.message
       );
 
-      localStorage.removeItem('smartlease_token');
-      localStorage.removeItem('smartlease_user');
-
-      setUser(null);
+      // Only clear authentication when the token is actually invalid.
+      if (error.response?.status === 401) {
+        localStorage.removeItem('smartlease_token');
+        localStorage.removeItem('smartlease_user');
+        setUser(null);
+      }
 
       return null;
 

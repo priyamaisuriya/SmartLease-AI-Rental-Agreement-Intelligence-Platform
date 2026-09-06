@@ -23,10 +23,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('smartlease_token');
-      localStorage.removeItem('smartlease_user');
-    }
+    console.error(
+      'API Error:',
+      error.response?.status,
+      error.response?.data || error.message
+    );
 
     return Promise.reject(error);
   }
