@@ -35,6 +35,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AiUsage from './pages/admin/AiUsage';
 import UsersManagement from './pages/admin/UsersManagement';
 import PropertyManagement from './pages/admin/PropertyManagement';
+import AdminPropertyDetails from './pages/admin/AdminPropertyDetails';
 import RentalRequestsManagement from './pages/admin/RentalRequestsManagement';
 import AgreementsManagement from './pages/admin/AgreementsManagement';
 import ReportsManagement from './pages/admin/ReportsManagement';
@@ -66,10 +67,7 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* =========================
-            PUBLIC ROUTES
-        ========================== */}
-
+        {/* PUBLIC ROUTES */}
         <Route element={<LandingLayout />}>
           <Route path="/" element={<Landing />} />
         </Route>
@@ -77,101 +75,54 @@ function App() {
         <Route path="/login" element={<Auth />} />
         <Route path="/register" element={<Auth />} />
 
-
-        {/* =========================
-            TENANT ROUTES
-        ========================== */}
-
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={['tenant']} />
-          }
-        >
+        {/* TENANT ROUTES */}
+        <Route element={<ProtectedRoute allowedRoles={['tenant']} />}>
           <Route element={<AppLayout />}>
 
-            <Route
-              path="/dashboard"
-              element={<Dashboard />}
-            />
+            <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-              path="/properties"
-              element={<Properties />}
-            />
+            <Route path="/properties" element={<Properties />} />
 
             <Route
               path="/properties/:id"
               element={<PropertyDetails />}
             />
 
-            <Route
-              path="/rentals"
-              element={<Rentals />}
-            />
+            <Route path="/rentals" element={<Rentals />} />
 
-            <Route
-              path="/agreements"
-              element={<Agreements />}
-            />
+            <Route path="/agreements" element={<Agreements />} />
 
-            <Route
-              path="/analysis"
-              element={<Analysis />}
-            />
+            <Route path="/analysis" element={<Analysis />} />
 
             <Route
               path="/analysis/:agreementId"
               element={<Analysis />}
             />
 
-            <Route
-              path="/chat"
-              element={<Chat />}
-            />
+            <Route path="/chat" element={<Chat />} />
 
             <Route
               path="/chat/:agreementId"
               element={<Chat />}
             />
 
-            <Route
-              path="/reminders"
-              element={<Reminders />}
-            />
+            <Route path="/reminders" element={<Reminders />} />
 
             <Route
               path="/notifications"
               element={<Notifications />}
             />
 
-            <Route
-              path="/reports"
-              element={<Reports />}
-            />
+            <Route path="/reports" element={<Reports />} />
 
-            <Route
-              path="/profile"
-              element={<Profile />}
-            />
+            <Route path="/profile" element={<Profile />} />
 
           </Route>
         </Route>
 
-
-        {/* =========================
-            ADMIN ROUTES
-        ========================== */}
-
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={['admin']}
-            />
-          }
-        >
-          <Route
-            path="/admin"
-            element={<AdminLayout />}
-          >
+        {/* ADMIN ROUTES */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
 
             <Route
               index
@@ -191,6 +142,11 @@ function App() {
             <Route
               path="properties"
               element={<PropertyManagement />}
+            />
+
+            <Route
+              path="properties/:id"
+              element={<AdminPropertyDetails />}
             />
 
             <Route
@@ -241,17 +197,8 @@ function App() {
           </Route>
         </Route>
 
-
-        {/* =========================
-            LANDLORD ROUTES
-        ========================== */}
-
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={['landlord']}
-            />
-          }
-        >
+        {/* LANDLORD ROUTES */}
+        <Route element={<ProtectedRoute allowedRoles={['landlord']} />}>
           <Route
             path="/landlord"
             element={<LandlordLayout />}
@@ -335,11 +282,7 @@ function App() {
           </Route>
         </Route>
 
-
-        {/* =========================
-            FALLBACK
-        ========================== */}
-
+        {/* FALLBACK */}
         <Route
           path="*"
           element={<Navigate to="/" replace />}
