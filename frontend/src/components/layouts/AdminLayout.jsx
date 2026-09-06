@@ -19,6 +19,7 @@ const NAV_ITEMS = [
 
 const AdminLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
 
   // Group nav items by section for the sidebar
@@ -134,32 +135,46 @@ const AdminLayout = () => {
       {/* Main column */}
       <div className="flex-1 min-w-0 flex flex-col h-screen">
         {/* Topbar */}
-        <header className="px-10 pt-[26px] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="px-10 pt-[26px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileMenuOpen(true)} className="p-1 -ml-2 text-ink lg:hidden">
               <Menu size={20} />
             </button>
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.12em] text-text-muted m-0 font-semibold mb-1">{eyebrow}</p>
-              <h1 className="text-[26px] font-serif font-medium m-0 text-ink">{pageTitle}</h1>
-            </div>
+            {/* Header text removed as requested */}
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="relative hidden md:block">
-              <Search className="w-4 h-4 text-text-faint absolute left-3 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-9 pr-4 py-2 w-64 bg-white border border-border rounded-lg text-sm focus:outline-none focus:border-gold focus:ring-[3px] focus:ring-gold/20 transition-all placeholder:text-placeholder"
-              />
-            </div>
             <button className="relative p-2 text-text-muted hover:text-ink hover:bg-paper-card rounded-lg transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-risk-amber rounded-full border-2 border-paper"></span>
             </button>
-            <div className="w-9 h-9 rounded-full bg-ink text-paper flex items-center justify-center font-serif text-sm font-bold shadow-sm ml-2 cursor-pointer hover:bg-ink-dark transition-colors">
-              AD
+            <div className="relative">
+              <div 
+                className="w-9 h-9 rounded-full bg-ink text-paper flex items-center justify-center font-serif text-sm font-bold shadow-sm ml-2 cursor-pointer hover:bg-ink-dark transition-colors"
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+              >
+                AD
+              </div>
+              
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-border py-1 z-50">
+                  <Link 
+                    to="/admin/profile" 
+                    className="flex items-center px-4 py-2 text-sm text-ink hover:bg-paper-card transition-colors"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <button 
+                    className="flex items-center w-full px-4 py-2 text-sm text-risk-red hover:bg-risk-red-bg transition-colors text-left"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
