@@ -15,6 +15,10 @@ api.interceptors.request.use(
       config.headers['x-auth-token'] = token;
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

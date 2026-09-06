@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 const NAV_ITEMS = [
   { id: '/landlord', label: 'Dashboard', icon: LayoutDashboard, section: 'Main' },
   { id: '/landlord/properties', label: 'My Properties', icon: Building, section: 'Property Management' },
-  { id: '/landlord/properties/add', label: 'Add Property', icon: PlusCircle, section: 'Property Management' },
   { id: '/landlord/rental-requests', label: 'Rental Requests', icon: ClipboardList, badge: '3', section: 'Property Management' },
   { id: '/landlord/tenants', label: 'Tenants', icon: Users, section: 'Property Management' },
   { id: '/landlord/agreements', label: 'Agreements', icon: FileText, section: 'Agreements & AI' },

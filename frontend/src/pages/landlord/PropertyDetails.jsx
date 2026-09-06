@@ -246,6 +246,24 @@ const PropertyDetails = () => {
       </div>
 
       {/* ==================================================
+          PROPERTY IMAGE
+      ================================================== */}
+      <div className="w-full h-[350px] rounded-xl overflow-hidden border border-border shadow-sm mb-6 bg-paper">
+        <img
+          src={
+            property.images?.length > 0
+              ? (property.images[0].startsWith('http') ? property.images[0] : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${property.images[0]}`)
+              : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
+          }
+          alt={property.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+          }}
+        />
+      </div>
+
+      {/* ==================================================
           PROPERTY INFORMATION
       ================================================== */}
       <div className="bg-white border border-border rounded-xl shadow-sm p-6">

@@ -8,6 +8,7 @@ import {
   Edit,
   Eye,
   Ban,
+  CheckCircle,
   Trash2,
   Building,
   X,
@@ -18,7 +19,7 @@ import StatusBadge from '../../components/admin/StatusBadge';
 
 const PropertyCard = ({
   property,
-  onDeactivate,
+  onToggleStatus,
   onDelete,
   actionLoading,
 }) => {
@@ -46,7 +47,7 @@ const PropertyCard = ({
 
   const image =
     property.images?.length > 0
-      ? property.images[0]
+      ? (property.images[0].startsWith('http') ? property.images[0] : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${property.images[0]}`)
       : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
 
   const formattedRent = Number(
@@ -62,8 +63,7 @@ const PropertyCard = ({
           alt={property.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
-            e.currentTarget.src =
-              'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
           }}
         />
 
@@ -155,25 +155,23 @@ const PropertyCard = ({
           <Edit className="w-4 h-4" />
         </Link>
 
-        {/* Deactivate */}
+        {/* Toggle Status */}
         <button
           type="button"
-          onClick={() => onDeactivate(property)}
-          disabled={
-            actionLoading ||
-            property.status === 'rented' ||
-            property.status === 'inactive'
-          }
-          className="flex items-center justify-center py-1.5 rounded hover:bg-border transition-colors text-text-muted hover:text-warn-600 disabled:opacity-40 disabled:cursor-not-allowed"
+          onClick={() => onToggleStatus(property)}
+          disabled={actionLoading || property.status === 'rented'}
+          className={`flex items-center justify-center py-1.5 rounded hover:bg-border transition-colors text-text-muted disabled:opacity-40 disabled:cursor-not-allowed ${
+            property.status === 'inactive' ? 'hover:text-green-600' : 'hover:text-warn-600'
+          }`}
           title={
             property.status === 'rented'
               ? 'Rented property cannot be deactivated'
               : property.status === 'inactive'
-                ? 'Property is already inactive'
-                : 'Deactivate'
+                ? 'Activate Property'
+                : 'Deactivate Property'
           }
         >
-          <Ban className="w-4 h-4" />
+          {property.status === 'inactive' ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
         </button>
 
         {/* Delete / Soft Delete */}
@@ -257,23 +255,20 @@ const MyProperties = () => {
     fetchProperties();
   }, []);
 
-  const handleDeactivate = async (property) => {
+  const handleToggleStatus = async (property) => {
     if (property.status === 'rented') {
       alert(
-        'This property is currently rented and cannot be deactivated.'
+        'This property is currently rented and its status cannot be changed.'
       );
       return;
     }
 
-    if (property.status === 'inactive') {
-      alert(
-        'This property is already inactive.'
-      );
-      return;
-    }
+    const isCurrentlyInactive = property.status === 'inactive';
+    const newStatus = isCurrentlyInactive ? 'available' : 'inactive';
+    const actionText = isCurrentlyInactive ? 'Activate' : 'Deactivate';
 
     const confirmed = window.confirm(
-      `Deactivate "${property.title}"?\n\nThe property will no longer appear as an available listing.`
+      `${actionText} "${property.title}"?\n\nThe property will ${isCurrentlyInactive ? 'now appear' : 'no longer appear'} as an available listing.`
     );
 
     if (!confirmed) {
@@ -284,12 +279,9 @@ const MyProperties = () => {
     setError('');
 
     try {
-      /*
-       * Backend DELETE endpoint performs a soft delete.
-       * It changes the property status to "inactive".
-       */
-      await api.delete(
-        `/properties/${property._id}`
+      await api.patch(
+        `/properties/${property._id}/status`,
+        { status: newStatus }
       );
 
       await fetchProperties();
@@ -302,7 +294,7 @@ const MyProperties = () => {
 
       setError(
         err.response?.data?.message ||
-        'Failed to deactivate property.'
+        'Failed to update property status.'
       );
     } finally {
       setActionLoading(false);
@@ -310,11 +302,24 @@ const MyProperties = () => {
   };
 
   const handleDelete = async (property) => {
-    /*
-     * The current backend DELETE endpoint is implemented
-     * as a soft-delete/deactivation.
-     */
-    await handleDeactivate(property);
+    if (property.status === 'rented') {
+      alert('Rented property cannot be deleted.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete "${property.title}"?\n\nThis will permanently delete the property.`
+    );
+    if (!confirmed) return;
+    setActionLoading(true);
+    try {
+      await api.delete(`/properties/${property._id}`);
+      await fetchProperties();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete property');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const filteredProperties = useMemo(() => {
@@ -434,8 +439,8 @@ const MyProperties = () => {
                 setShowFilters(!showFilters)
               }
               className={`flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${showFilters
-                  ? 'bg-lease-50 border-lease-500 text-lease-600'
-                  : 'bg-paper border-border text-ink hover:bg-border/50'
+                ? 'bg-lease-50 border-lease-500 text-lease-600'
+                : 'bg-paper border-border text-ink hover:bg-border/50'
                 }`}
             >
               <Filter className="w-4 h-4" />
@@ -562,7 +567,7 @@ const MyProperties = () => {
             <PropertyCard
               key={property._id}
               property={property}
-              onDeactivate={handleDeactivate}
+              onToggleStatus={handleToggleStatus}
               onDelete={handleDelete}
               actionLoading={actionLoading}
             />

@@ -4,6 +4,7 @@ const router = express.Router();
 
 const auth = require('../middleware/auth');
 const requirePermission = require('../middleware/permissions');
+const propertyUpload = require('../middleware/propertyUpload');
 
 const {
     createProperty,
@@ -11,7 +12,8 @@ const {
     getAvailableProperties,
     getPropertyById,
     updateProperty,
-    deleteProperty
+    deleteProperty,
+    updatePropertyStatus
 } = require('../controllers/propertyController');
 
 
@@ -23,6 +25,7 @@ router.post(
     '/',
     auth,
     requirePermission('property-create'),
+    propertyUpload.array('images', 10),
     createProperty
 );
 
@@ -71,6 +74,7 @@ router.put(
     '/:id',
     auth,
     requirePermission('property-update'),
+    propertyUpload.array('images', 10),
     updateProperty
 );
 
@@ -84,6 +88,17 @@ router.delete(
     auth,
     requirePermission('property-delete'),
     deleteProperty
+);
+
+// ============================================================
+// LANDLORD — UPDATE PROPERTY STATUS
+// ============================================================
+
+router.patch(
+    '/:id/status',
+    auth,
+    requirePermission('property-update'),
+    updatePropertyStatus
 );
 
 

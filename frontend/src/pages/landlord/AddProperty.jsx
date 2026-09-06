@@ -250,9 +250,6 @@ const AddProperty = () => {
 
   /*
    * Image selection
-   *
-   * Current backend does not upload property images.
-   * Images selected here are local previews only.
    */
   const handleImageSelection = (event) => {
     const files = Array.from(
@@ -497,90 +494,46 @@ const AddProperty = () => {
     );
   };
 
-  /*
-   * Build backend payload
-   */
   const buildPayload = () => {
-    const payload = {
-      title:
-        formData.title.trim(),
+    const formDataObj = new FormData();
+    
+    formDataObj.append('title', formData.title.trim());
+    formDataObj.append('propertyType', formData.propertyType);
+    formDataObj.append('address', formData.address.trim());
+    formDataObj.append('city', formData.city.trim());
+    formDataObj.append('state', formData.state.trim());
+    formDataObj.append('pincode', formData.pincode.trim());
+    formDataObj.append('bedrooms', Number(formData.bedrooms || 0));
+    formDataObj.append('bathrooms', Number(formData.bathrooms || 0));
+    formDataObj.append('area', Number(formData.area || 0));
+    formDataObj.append('furnishing', formData.furnishing);
+    formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
+    formDataObj.append('securityDeposit', Number(formData.securityDeposit || 0));
+    formDataObj.append('description', formData.description.trim());
 
-      propertyType:
-        formData.propertyType,
-
-      address:
-        formData.address.trim(),
-
-      city:
-        formData.city.trim(),
-
-      state:
-        formData.state.trim(),
-
-      pincode:
-        formData.pincode.trim(),
-
-      bedrooms:
-        Number(formData.bedrooms || 0),
-
-      bathrooms:
-        Number(formData.bathrooms || 0),
-
-      area:
-        Number(formData.area || 0),
-
-      furnishing:
-        formData.furnishing,
-
-      monthlyRent:
-        Number(formData.monthlyRent || 0),
-
-      securityDeposit:
-        Number(
-          formData.securityDeposit || 0
-        ),
-
-      description:
-        formData.description.trim(),
-    };
-
-    /*
-     * Existing image URLs only.
-     */
-    const existingImageUrls =
-      formData.images.filter(
-        (image) =>
-          typeof image === 'string'
-      );
-
-    if (existingImageUrls.length > 0) {
-      payload.images =
-        existingImageUrls;
-    }
-
-    /*
-     * These fields are kept because they exist
-     * in the frontend property form.
-     *
-     * The current backend controller may ignore
-     * them until those fields are supported there.
-     */
     if (formData.landmark.trim()) {
-      payload.landmark =
-        formData.landmark.trim();
+      formDataObj.append('landmark', formData.landmark.trim());
     }
 
     if (formData.availableFrom) {
-      payload.availableFrom =
-        formData.availableFrom;
+      formDataObj.append('availableFrom', formData.availableFrom);
     }
 
     if (formData.amenities.length > 0) {
-      payload.amenities =
-        formData.amenities;
+      formData.amenities.forEach(amenity => {
+         formDataObj.append('amenities', amenity);
+      });
     }
 
-    return payload;
+    formData.images.forEach(image => {
+       if (typeof image === 'string') {
+          formDataObj.append('images', image);
+       } else if (image.file) {
+          formDataObj.append('images', image.file);
+       }
+    });
+
+    return formDataObj;
   };
 
   /*
@@ -1285,11 +1238,10 @@ const AddProperty = () => {
                     {formData.images.map(
                       (image, index) => {
 
-                        const preview =
-                          typeof image ===
-                            'string'
-                            ? image
-                            : image.preview;
+                        let preview = typeof image === 'string' ? image : image.preview;
+                        if (typeof preview === 'string' && !preview.startsWith('http') && !preview.startsWith('blob:')) {
+                           preview = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${preview}`;
+                        }
 
                         const imageId =
                           typeof image ===

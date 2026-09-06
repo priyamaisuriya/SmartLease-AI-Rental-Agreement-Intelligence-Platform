@@ -66,7 +66,7 @@ const createProperty = async (req, res) => {
             });
         }
 
-        const property = await Property.create({
+        const propertyData = {
             landlord: req.user.id,
             title,
             description,
@@ -82,7 +82,13 @@ const createProperty = async (req, res) => {
             monthlyRent,
             securityDeposit,
             status: 'available'
-        });
+        };
+
+        if (req.files && req.files.length > 0) {
+            propertyData.images = req.files.map(file => `/uploads/properties/${file.filename}`);
+        }
+
+        const property = await Property.create(propertyData);
 
         await createActivityLog({
             userId: req.user.id,
@@ -314,6 +320,25 @@ const updateProperty = async (req, res) => {
             }
         });
 
+        let updatedImages = [];
+        if (req.body.images) {
+            if (Array.isArray(req.body.images)) {
+                updatedImages = req.body.images;
+            } else if (typeof req.body.images === 'string') {
+                updatedImages = [req.body.images];
+            }
+        }
+        
+        if (req.files && req.files.length > 0) {
+            const newImages = req.files.map(file => `/uploads/properties/${file.filename}`);
+            updatedImages = [...updatedImages, ...newImages];
+        }
+
+        if (req.body.images !== undefined || (req.files && req.files.length > 0)) {
+             property.images = updatedImages;
+             if (!changedFields.includes('images')) changedFields.push('images');
+        }
+
         await property.save();
 
         await createActivityLog({
@@ -431,3 +456,6 @@ module.exports = {
     updateProperty,
     deleteProperty
 };
+
+const updatePropertyStatus = async (req, res) => { try { const property = await Property.findById(req.params.id); if (!property) return res.status(404).json({ message: 'Property not found' }); if (property.landlord.toString() !== req.user.id) return res.status(403).json({ message: 'Unauthorized' }); if (property.status === 'rented') return res.status(400).json({ message: 'Rented properties cannot be modified this way' }); property.status = req.body.status || 'available'; await property.save(); return res.json({ message: 'Status updated', property }); } catch (err) { res.status(500).json({ message: 'Server error' }); } };
+module.exports.updatePropertyStatus = updatePropertyStatus;

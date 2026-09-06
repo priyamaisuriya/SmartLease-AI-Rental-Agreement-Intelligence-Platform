@@ -663,7 +663,7 @@ const Properties = () => {
                         className="bg-white border border-border rounded-[9px] overflow-hidden transition-all duration-150 hover:-translate-y-[3px] hover:shadow-[0_16px_32px_-18px_rgba(27,42,74,0.28)] flex flex-col group"
                       >
 
-                        {/* Image Placeholder */}
+                        {/* Image / Placeholder */}
                         <div
                           className="h-[148px] relative flex items-center justify-center overflow-hidden"
                           style={{
@@ -671,10 +671,34 @@ const Properties = () => {
                               gradient,
                           }}
                         >
+                          {property.images && property.images.length > 0 ? (
+                            <img
+                              src={property.images[0].startsWith('http') ? property.images[0] : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${property.images[0]}`}
+                              alt={property.title}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            /* Property Icon Fallback */
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke={iconColor}
+                              strokeWidth="1.3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="w-[34px] h-[34px] opacity-50 z-0"
+                            >
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                              <path d="M9 22V12h6v10" />
+                            </svg>
+                          )}
 
                           {/* Status */}
                           <span
-                            className={`absolute top-[10px] left-[10px] font-sans text-[10.5px] font-bold tracking-[0.03em] uppercase px-[9px] py-[4px] rounded-[20px] text-white ${isAvailable
+                            className={`absolute top-[10px] left-[10px] font-sans text-[10.5px] font-bold tracking-[0.03em] uppercase px-[9px] py-[4px] rounded-[20px] text-white z-10 ${isAvailable
                                 ? 'bg-risk-green/90'
                                 : 'bg-risk-amber/90'
                               }`}
@@ -685,7 +709,7 @@ const Properties = () => {
                           </span>
 
                           {/* Price */}
-                          <span className="absolute bottom-[10px] right-[10px] bg-ink/90 text-paper-card font-serif text-[15px] font-medium px-[12px] py-[5px] rounded-[5px]">
+                          <span className="absolute bottom-[10px] right-[10px] bg-ink/90 text-paper-card font-serif text-[15px] font-medium px-[12px] py-[5px] rounded-[5px] z-10">
 
                             ₹
                             {Number(
@@ -700,20 +724,6 @@ const Properties = () => {
                             </span>
 
                           </span>
-
-                          {/* Property Icon */}
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke={iconColor}
-                            strokeWidth="1.3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-[34px] h-[34px] opacity-50"
-                          >
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                            <path d="M9 22V12h6v10" />
-                          </svg>
 
                         </div>
 
