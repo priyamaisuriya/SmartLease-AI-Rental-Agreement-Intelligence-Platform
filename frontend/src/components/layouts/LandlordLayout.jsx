@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { id: '/landlord/rental-requests', label: 'Rental Requests', icon: ClipboardList, badge: '3', section: 'Property Management' },
   { id: '/landlord/tenants', label: 'Tenants', icon: Users, section: 'Property Management' },
   { id: '/landlord/agreements', label: 'Agreements', icon: FileText, section: 'Agreements & AI' },
+  { id: '/landlord/analysis', label: 'AI Analysis', icon: BrainCircuit, section: 'Agreements & AI' },
   { id: '/landlord/chat', label: 'AI Chat', icon: MessageSquare, section: 'Agreements & AI' },
   { id: '/landlord/reminders', label: 'Reminders', icon: Calendar, section: 'Agreements & AI' },
   { id: '/landlord/reports', label: 'Reports', icon: BarChart3, section: 'Agreements & AI' },

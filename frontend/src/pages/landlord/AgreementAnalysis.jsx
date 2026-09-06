@@ -43,6 +43,24 @@ const AgreementAnalysis = () => {
     { name: 'Safe', value: 65, fill: '#F6F7FB' }  // canvas
   ];
 
+  if (!agreementId) {
+    return (
+      <div className="fade-in max-w-6xl mx-auto">
+        <div className="rounded-xl2 border border-border bg-white px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-gold/10 text-gold-deep mb-4">
+            <BrainCircuit size={24} />
+          </div>
+          <h2 className="font-display text-xl font-semibold text-ink">
+            Select an agreement to analyze
+          </h2>
+          <p className="mt-2 text-sm text-text-muted max-w-md mx-auto">
+            Choose a tenant's agreement to view AI-powered risk analysis, extracted financial terms, and hidden anomalies.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 fade-in pb-12 max-w-6xl mx-auto">
       {/* Header */}
