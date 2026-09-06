@@ -24,7 +24,6 @@ const Analysis = () => {
   useEffect(() => {
     const loadAnalysis = async () => {
       if (!agreementId) {
-        setError('Agreement ID is missing.');
         setLoading(false);
         return;
       }
@@ -278,6 +277,35 @@ const Analysis = () => {
           <p className="text-sm text-text-faint">
             Loading agreement...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!agreementId) {
+    return (
+      <div className="fade-in">
+        <div className="rounded-xl2 border border-border bg-white p-6">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-gold/10 text-gold-deep mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-search"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4.268 21a2 2 0 0 0 1.727 1H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="m9 18-1.5-1.5"/><circle cx="5" cy="14" r="3"/></svg>
+            </div>
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Select an agreement to analyze
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-text-muted">
+              Choose an agreement from your list to view its AI summary, risk analysis, and financial details.
+            </p>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => navigate('/agreements')}
+                className="rounded-[6px] bg-ink px-[24px] py-[12px] text-[14px] font-semibold text-paper shadow-sm hover:bg-ink-dark transition-colors"
+              >
+                Go to My Agreements
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );

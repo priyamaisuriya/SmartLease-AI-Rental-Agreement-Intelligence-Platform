@@ -31,7 +31,6 @@ const Chat = () => {
   useEffect(() => {
     const loadChat = async () => {
       if (!agreementId) {
-        setError('Agreement ID is missing.');
         setLoading(false);
         return;
       }
@@ -280,6 +279,37 @@ const Chat = () => {
           <p className="text-sm text-text-faint">
             Loading AI chat...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // EMPTY STATE
+  // =====================================================
+
+  if (!agreementId) {
+    return (
+      <div className="fade-in">
+        <div className="rounded-xl2 border border-border bg-white px-6 py-12 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-gold/10 text-gold-deep mb-4">
+            <Bot size={24} />
+          </div>
+          <h2 className="font-display text-xl font-semibold text-ink">
+            Select an agreement to chat
+          </h2>
+          <p className="mt-2 text-sm text-text-muted max-w-md mx-auto">
+            Choose an agreement from your list to ask SmartLease AI questions about rent, notice periods, clauses, and more.
+          </p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => navigate('/agreements')}
+              className="rounded-[6px] bg-ink px-[24px] py-[12px] text-[14px] font-semibold text-paper shadow-sm hover:bg-ink-dark transition-colors"
+            >
+              Go to My Agreements
+            </button>
+          </div>
         </div>
       </div>
     );

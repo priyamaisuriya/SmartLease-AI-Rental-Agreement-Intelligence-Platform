@@ -69,25 +69,6 @@ const Upload = () => {
         <h1 className="font-serif text-[32px] text-ink m-0 font-medium">Upload Agreement</h1>
       </div>
 
-      <div className="flex items-center gap-4 mb-[40px] w-full max-w-[800px]">
-        {/* Step 1 */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gold text-ink-dark font-bold text-[14px] flex items-center justify-center shadow-[0_2px_8px_rgba(201,162,75,0.25)]">1</div>
-          <span className="font-mono text-[13px] font-bold text-ink">Upload file</span>
-        </div>
-        <div className="flex-1 h-[1px] bg-border mx-2"></div>
-        {/* Step 2 */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white border border-border text-text-muted font-bold text-[14px] flex items-center justify-center">2</div>
-          <span className="font-mono text-[13px] text-text-muted">Agreement details</span>
-        </div>
-        <div className="flex-1 h-[1px] bg-border mx-2"></div>
-        {/* Step 3 */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white border border-border text-text-muted font-bold text-[14px] flex items-center justify-center">3</div>
-          <span className="font-mono text-[13px] text-text-muted">AI review</span>
-        </div>
-      </div>
 
       <div className="w-full">
         {step === 'idle' && (

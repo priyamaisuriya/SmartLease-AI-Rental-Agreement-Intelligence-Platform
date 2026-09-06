@@ -115,8 +115,18 @@ function App() {
             />
 
             <Route
+              path="/analysis"
+              element={<Analysis />}
+            />
+
+            <Route
               path="/analysis/:agreementId"
               element={<Analysis />}
+            />
+
+            <Route
+              path="/chat"
+              element={<Chat />}
             />
 
             <Route
