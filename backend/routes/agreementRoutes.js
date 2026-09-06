@@ -20,7 +20,7 @@ router.post(
     '/upload',
     auth,
     requirePermission('agreement-upload'),
-    agreementUpload.single('agreement'),
+    agreementUpload.single('file'),
     uploadAgreement
 );
 
