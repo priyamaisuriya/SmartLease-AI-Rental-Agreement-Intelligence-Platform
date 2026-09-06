@@ -153,9 +153,10 @@ const AppLayout = () => {
                       key={item.id}
                       to={item.id}
                       className={({ isActive }) =>
-                        `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive
-                          ? 'bg-gold/12 text-gold-soft font-semibold'
-                          : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'
+                        `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${
+                          isActive
+                            ? 'bg-gold/12 text-gold-soft font-semibold'
+                            : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'
                         }`
                       }
                     >
@@ -216,10 +217,11 @@ const AppLayout = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[248px] flex-col bg-gradient-to-b from-ink-dark to-[#101a2e] flex transition-transform duration-300 lg:hidden px-[18px] py-[28px] ${mobileMenuOpen
+        className={`fixed inset-y-0 left-0 z-50 w-[248px] flex-col bg-gradient-to-b from-ink-dark to-[#101a2e] flex transition-transform duration-300 lg:hidden px-[18px] py-[28px] ${
+          mobileMenuOpen
             ? 'translate-x-0'
             : '-translate-x-full'
-          }`}
+        }`}
       >
 
         {/* Mobile Logo */}
@@ -267,9 +269,10 @@ const AppLayout = () => {
                         setMobileMenuOpen(false)
                       }
                       className={({ isActive }) =>
-                        `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive
-                          ? 'bg-gold/12 text-gold-soft font-semibold'
-                          : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'
+                        `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${
+                          isActive
+                            ? 'bg-gold/12 text-gold-soft font-semibold'
+                            : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'
                         }`
                       }
                     >

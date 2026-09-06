@@ -80,11 +80,11 @@ const Auth = () => {
         );
 
         if (loggedInUser?.role === 'admin') {
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else if (loggedInUser?.role === 'landlord') {
-          navigate('/landlord');
+          navigate('/landlord', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
 
         return;
