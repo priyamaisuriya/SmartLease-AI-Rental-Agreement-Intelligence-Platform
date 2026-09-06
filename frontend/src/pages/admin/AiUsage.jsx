@@ -19,14 +19,14 @@ const AiUsage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-ink">AI Usage Dashboard</h1>
-          <p className="text-text-muted mt-1">Monitor AI engine performance and feature utilization.</p>
+          <h1 className="text-[24px] font-bold text-ink">AI Usage Dashboard</h1>
+          <p className="text-text-muted mt-1 text-[14px]">Monitor AI engine performance and feature utilization.</p>
         </div>
         <div className="flex items-center gap-2">
           <select 
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-ink focus:outline-none focus:ring-1 focus:ring-lease-500"
+            className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-border transition-all"
           >
             <option>7 Days</option>
             <option>30 Days</option>
@@ -76,17 +76,17 @@ const AiUsage = () => {
           <ChartCard title="AI Usage & Processing Time">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={aiUsageTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7E9F2" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8FA3' }} dy={10} />
-                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8FA3' }} />
-                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8FA3' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E6E2D6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8577' }} dy={10} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8577' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8577' }} />
                 <RechartsTooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  cursor={{ stroke: '#E7E9F2', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #E6E2D6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}
+                  cursor={{ stroke: '#E6E2D6', strokeWidth: 1, strokeDasharray: '4 4' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                <Line yAxisId="left" type="monotone" dataKey="totalRequests" name="Total Requests" stroke="#5B57E8" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line yAxisId="right" type="monotone" dataKey="processingTime" name="Processing Time (s)" stroke="#C1811F" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="left" type="monotone" dataKey="totalRequests" name="Total Requests" stroke="#5B57E8" strokeWidth={3} dot={{ r: 4, fill: '#white', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Line yAxisId="right" type="monotone" dataKey="processingTime" name="Processing Time (s)" stroke="#C1811F" strokeWidth={3} dot={{ r: 4, fill: '#white', strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -111,8 +111,8 @@ const AiUsage = () => {
                   ))}
                 </Pie>
                 <RechartsTooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  itemStyle={{ color: '#1E2233', fontWeight: 500 }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #E6E2D6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}
+                  itemStyle={{ color: '#1B2A4A', fontWeight: 500 }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
@@ -122,8 +122,8 @@ const AiUsage = () => {
       </div>
 
       {/* Feature Usage Bar Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-border">
-        <h3 className="font-semibold text-ink mb-6">AI Feature Utilization</h3>
+      <div className="bg-white p-6 rounded-[8px] shadow-sm border border-border">
+        <h3 className="font-semibold text-ink text-[16px] mb-6">AI Feature Utilization</h3>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -136,14 +136,14 @@ const AiUsage = () => {
               layout="vertical"
               margin={{ top: 0, right: 0, left: 30, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E7E9F2" />
-              <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8FA3' }} />
-              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#1E2233', fontWeight: 500 }} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E6E2D6" />
+              <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#8A8577' }} />
+              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#1B2A4A', fontWeight: 500 }} />
               <RechartsTooltip 
-                cursor={{ fill: '#F6F7FB' }}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                cursor={{ fill: '#F5F2EA' }}
+                contentStyle={{ borderRadius: '8px', border: '1px solid #E6E2D6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
               />
-              <Bar dataKey="calls" name="API Calls" fill="#A672F0" radius={[0, 4, 4, 0]} barSize={32} />
+              <Bar dataKey="calls" name="API Calls" fill="#C9A24B" radius={[0, 4, 4, 0]} barSize={32} />
             </BarChart>
           </ResponsiveContainer>
         </div>
