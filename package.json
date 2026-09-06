@@ -1,0 +1,25 @@
+{
+  "name": "smartlease-ai-rental-agreement-intelligence-platform",
+  "version": "1.0.0",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "server": "npm run server --prefix backend",
+    "client": "npm run dev --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/priyamaisuriya/SmartLease-AI-Rental-Agreement-Intelligence-Platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/priyamaisuriya/SmartLease-AI-Rental-Agreement-Intelligence-Platform/issues"
+  },
+  "homepage": "https://github.com/priyamaisuriya/SmartLease-AI-Rental-Agreement-Intelligence-Platform#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
