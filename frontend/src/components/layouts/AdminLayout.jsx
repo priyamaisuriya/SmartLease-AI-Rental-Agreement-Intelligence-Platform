@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard, Users, Building, FileText, Inbox, BarChart, ShieldAlert, Activity, FileBarChart, Settings, Bell, MessageSquare, Search } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
   { id: '/admin', label: 'Dashboard', icon: LayoutDashboard, section: 'Main' },
@@ -28,12 +29,18 @@ const AdminLayout = () => {
   const currentItem = NAV_ITEMS.find(item => location.pathname === item.id || location.pathname.startsWith(item.id + '/')) || NAV_ITEMS[0];
   const pageTitle = currentItem.label;
   const eyebrow = currentItem.section;
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div id="app-shell" className="flex min-h-screen bg-paper overflow-hidden font-sans text-ink">
       {/* Sidebar (desktop) */}
       <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col bg-gradient-to-b from-ink-dark to-[#101a2e] lg:flex px-[18px] py-[28px]">
-        
+
         <div className="flex items-center gap-2.5 px-2 mb-[34px]">
           <div className="w-[34px] h-[34px] rounded-[3px] border border-gold flex items-center justify-center bg-gold/5 shrink-0">
             <span className="font-serif font-bold text-gold text-lg">S</span>
@@ -74,7 +81,10 @@ const AdminLayout = () => {
             <div className="text-[13px] font-semibold text-[#EDEBE3] truncate">Admin User</div>
             <div className="text-[11px] text-ink-muted block">Super Admin</div>
           </div>
-          <LogOut className="w-[15px] h-[15px] text-ink-muted hover:text-white cursor-pointer ml-auto" />
+          <LogOut
+            className="w-[15px] h-[15px] text-ink-muted hover:text-white cursor-pointer ml-auto"
+            onClick={handleLogout}
+          />
         </div>
       </aside>
 
@@ -96,7 +106,7 @@ const AdminLayout = () => {
             <X size={20} />
           </button>
         </div>
-        
+
         <nav className="scroll-thin flex-1 overflow-y-auto">
           {sections.map((section, sIdx) => (
             <div key={sIdx} className="mb-[22px]">
@@ -142,30 +152,30 @@ const AdminLayout = () => {
             </button>
             {/* Header text removed as requested */}
           </div>
-          
+
           <div className="flex items-center gap-4">
             <button className="relative p-2 text-text-muted hover:text-ink hover:bg-paper-card rounded-lg transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-risk-amber rounded-full border-2 border-paper"></span>
             </button>
             <div className="relative">
-              <div 
+              <div
                 className="w-9 h-9 rounded-full bg-ink text-paper flex items-center justify-center font-serif text-sm font-bold shadow-sm ml-2 cursor-pointer hover:bg-ink-dark transition-colors"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               >
                 AD
               </div>
-              
+
               {profileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-border py-1 z-50">
-                  <Link 
-                    to="/admin/profile" 
+                  <Link
+                    to="/admin/profile"
                     className="flex items-center px-4 py-2 text-sm text-ink hover:bg-paper-card transition-colors"
                     onClick={() => setProfileDropdownOpen(false)}
                   >
                     Profile
                   </Link>
-                  <button 
+                  <button
                     className="flex items-center w-full px-4 py-2 text-sm text-risk-red hover:bg-risk-red-bg transition-colors text-left"
                     onClick={() => {
                       setProfileDropdownOpen(false);

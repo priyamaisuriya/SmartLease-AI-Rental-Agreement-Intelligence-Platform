@@ -1,68 +1,308 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { myRentals } from '../data/mockData';
 import { Home } from 'lucide-react';
+import api from '../services/api';
 
 const Rentals = () => {
+  const [rentals, setRentals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchRentals = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const response = await api.get('/rentals/my-rentals');
+
+        console.log('My rentals response:', response.data);
+
+        setRentals(response.data.rentals || []);
+      } catch (err) {
+        console.error('Failed to load rentals:', err);
+
+        setError(
+          err.response?.data?.message ||
+          'Failed to load your rentals.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRentals();
+  }, []);
+
   const statusBadge = (status) => {
+    const statusClasses = {
+      active: 'bg-good-50 text-good-600',
+      completed: 'bg-gray-100 text-gray-600',
+      pending: 'bg-lease-50 text-lease-700',
+      cancelled: 'bg-red-50 text-red-600',
+    };
+
     return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-good-50 text-good-600">
+      <span
+        className={`inline - flex shrink - 0 items - center gap - 1.5 rounded - full px - 2.5 py - 1 text - xs font - medium ${statusClasses[status] || 'bg-gray-100 text-gray-600'
+          } `}
+      >
         <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
         {status}
       </span>
     );
   };
 
+  const formatDate = (date) => {
+    if (!date) return 'Not set';
+
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return Number(amount || 0).toLocaleString('en-IN');
+  };
+
+  if (loading) {
+    return (
+      <div className="fade-in">
+        <h1 className="font-display text-2xl font-semibold text-ink">
+          My rentals
+        </h1>
+
+        <p className="mt-1 text-sm text-text-muted">
+          Your current rental at a glance.
+        </p>
+
+        <div className="mt-6 flex items-center justify-center rounded-xl2 border border-border bg-white/60 px-6 py-14">
+          <p className="text-sm text-text-faint">
+            Loading your rentals...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fade-in">
+        <h1 className="font-display text-2xl font-semibold text-ink">
+          My rentals
+        </h1>
+
+        <p className="mt-1 text-sm text-text-muted">
+          Your current rental at a glance.
+        </p>
+
+        <div className="mt-6 rounded-xl2 border border-border bg-white px-6 py-10 text-center">
+          <p className="text-sm text-red-600">
+            {error}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-in">
-      <h1 className="font-display text-2xl font-semibold text-ink">My rentals</h1>
-      <p className="mt-1 text-sm text-text-muted">Your current rental at a glance.</p>
-      
+      <h1 className="font-display text-2xl font-semibold text-ink">
+        My rentals
+      </h1>
+
+      <p className="mt-1 text-sm text-text-muted">
+        Your current rental at a glance.
+      </p>
+
       <div className="mt-6 space-y-6">
-        {myRentals.length > 0 ? myRentals.map(r => (
-          <div key={r.id} className="overflow-hidden rounded-xl2 border border-border bg-white shadow-soft">
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr]">
-              <img src={r.image} className="h-52 w-full object-cover lg:h-full" alt={r.property} />
-              <div className="p-6">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-lg font-semibold text-ink">{r.property}</p>
-                    <p className="mt-1 text-sm text-text-faint">{r.address}</p>
+        {rentals.length > 0 ? (
+          rentals.map((r) => {
+            const property = r.property || {};
+            const landlord = r.landlord || {};
+
+            const image =
+              property.images && property.images.length > 0
+                ? property.images[0].startsWith('http')
+                  ? property.images[0]
+                  : `http://localhost:5000${property.images[0]}`
+                : null;
+
+            return (
+              <div
+                key={r._id}
+                className="overflow-hidden rounded-xl2 border border-border bg-white shadow-soft"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr]">
+
+                  {/* Property Image */}
+                  <div className="h-52 w-full bg-paper lg:h-full">
+                    {image ? (
+                      <img
+                        src={image}
+                        className="h-full w-full object-cover"
+                        alt={property.title}
+                      />
+                    ) : (
+                      <div className="flex h-full min-h-52 items-center justify-center text-text-faint">
+                        <div className="text-center">
+                          <Home
+                            size={36}
+                            className="mx-auto mb-2"
+                          />
+                          <p className="text-xs">
+                            No property image
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {statusBadge(r.agreementStatus)}
-                </div>
-                
-                <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div><p className="text-xs text-text-faint">Landlord</p><p className="mt-1 text-sm font-medium text-ink">{r.landlord}</p></div>
-                  <div><p className="text-xs text-text-faint">Start Date</p><p className="mt-1 text-sm font-medium text-ink">{r.startDate}</p></div>
-                  <div><p className="text-xs text-text-faint">Contractual Rent</p><p className="mt-1 text-sm font-medium text-ink">₹{r.contractualRent.toLocaleString('en-IN')}/mo</p></div>
-                  <div><p className="text-xs text-text-faint">Deposit</p><p className="mt-1 text-sm font-medium text-ink">₹{r.deposit.toLocaleString('en-IN')}</p></div>
-                </div>
-                
-                <p className="mt-4 rounded-lg bg-lease-50 px-3 py-2 text-xs text-lease-700">
-                  Contractual rent (above) reflects your signed agreement, and may differ from the property's original listed rent.
-                </p>
-                
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <Link to={`/properties/${r.propertyId}`} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper">View Property</Link>
-                  <Link to="/agreements" className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper">View Agreement</Link>
-                  <Link to="/analysis" className="rounded-lg bg-lease-600 px-3 py-2 text-xs font-medium text-white hover:bg-lease-700">Analyze Agreement</Link>
-                  <button onClick={() => alert('Opening chat with '+r.landlord)} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper">Contact Landlord</button>
+
+                  <div className="p-6">
+
+                    {/* Header */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-display text-lg font-semibold text-ink">
+                          {property.title || 'Rental Property'}
+                        </p>
+
+                        <p className="mt-1 text-sm text-text-faint">
+                          {property.address || 'Address not available'}
+                          {property.city
+                            ? `, ${property.city}`
+                            : ''}
+                          {property.state
+                            ? `, ${property.state}`
+                            : ''}
+                        </p>
+                      </div>
+
+                      {statusBadge(r.status)}
+                    </div>
+
+                    {/* Rental Information */}
+                    <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+
+                      <div>
+                        <p className="text-xs text-text-faint">
+                          Landlord
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-ink">
+                          {landlord.name || 'Not available'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-text-faint">
+                          Start Date
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-ink">
+                          {formatDate(r.startDate)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-text-faint">
+                          Contractual Rent
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-ink">
+                          ₹{formatCurrency(r.monthlyRent)}/mo
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-text-faint">
+                          Deposit
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-ink">
+                          ₹{formatCurrency(r.securityDeposit)}
+                        </p>
+                      </div>
+
+                    </div>
+
+                    {/* Rental Note */}
+                    <p className="mt-4 rounded-lg bg-lease-50 px-3 py-2 text-xs text-lease-700">
+                      Contractual rent above reflects the rent recorded
+                      for this rental and may differ from the property's
+                      original listed rent.
+                    </p>
+
+                    {/* Actions */}
+                    <div className="mt-5 flex flex-wrap gap-2">
+
+                      <Link
+                        to={`/properties/${property._id}`}
+                        className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper"
+                      >
+                        View Property
+                      </Link>
+
+                      <Link
+                        to="/agreements"
+                        className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper"
+                      >
+                        View Agreement
+                      </Link>
+
+                      <Link
+                        to="/analysis"
+                        className="rounded-lg bg-lease-600 px-3 py-2 text-xs font-medium text-white hover:bg-lease-700"
+                      >
+                        Analyze Agreement
+                      </Link>
+
+                      <button
+                        onClick={() =>
+                          alert(
+                            `Opening chat with ${landlord.name || 'landlord'
+                            }`
+                          )
+                        }
+                        className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-ink hover:bg-paper"
+                      >
+                        Contact Landlord
+                      </button>
+
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )) : (
+            );
+          })
+        ) : (
           <div className="flex flex-col items-center justify-center rounded-xl2 border border-dashed border-border bg-white/60 px-6 py-14 text-center">
+
             <span className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-lease-50 text-lease-600">
               <Home size={20} />
             </span>
-            <p className="font-display text-base font-semibold text-ink">No active rentals</p>
-            <p className="mt-1.5 max-w-sm text-sm text-text-faint">Once a rental request is accepted, it will appear here.</p>
+
+            <p className="font-display text-base font-semibold text-ink">
+              No rentals
+            </p>
+
+            <p className="mt-1.5 max-w-sm text-sm text-text-faint">
+              Once you book a property, it will appear here.
+            </p>
+
+            <Link
+              to="/properties"
+              className="mt-5 rounded-lg bg-lease-600 px-4 py-2 text-xs font-medium text-white hover:bg-lease-700"
+            >
+              Browse Properties
+            </Link>
+
           </div>
         )}
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
