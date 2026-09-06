@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const {
+    createActivityLog
+} = require('../services/activityLogService');
+
 
 // ============================================================
 // HELPER: CREATE JWT
@@ -41,35 +45,32 @@ const register = async (req, res) => {
 
     try {
 
-        // Basic validation
         if (!name || !email || !password) {
             return res.status(400).json({
                 message: 'Name, email and password are required'
             });
         }
 
-        // Check existing user
-        let user = await User.findOne({
-            email: email.trim().toLowerCase()
+        const normalizedEmail =
+            email.trim().toLowerCase();
+
+        const existingUser = await User.findOne({
+            email: normalizedEmail
         });
 
-        if (user) {
+        if (existingUser) {
             return res.status(400).json({
                 message: 'User already exists'
             });
         }
 
         /*
-         * Public registration should NOT allow:
+         * Public registration only allows:
          *
-         * - admin
-         * - property_manager
+         * tenant
+         * landlord
          *
-         * Public users can register as:
-         * - tenant
-         * - landlord
-         *
-         * Invalid/missing role defaults to tenant.
+         * Admin cannot be created publicly.
          */
 
         const publicRole =
@@ -77,18 +78,14 @@ const register = async (req, res) => {
                 ? 'landlord'
                 : 'tenant';
 
-
-        // Create user
-        user = new User({
+        const user = new User({
             name: name.trim(),
-            email: email.trim().toLowerCase(),
+            email: normalizedEmail,
             password,
             role: publicRole,
             phone: phone ? phone.trim() : ''
         });
 
-
-        // Hash password
         const salt = await bcrypt.genSalt(10);
 
         user.password = await bcrypt.hash(
@@ -96,14 +93,25 @@ const register = async (req, res) => {
             salt
         );
 
-
-        // Save
         await user.save();
 
+        await createActivityLog({
+            userId: user._id,
+            action: 'USER_REGISTERED',
+            module: 'AUTH',
+            description:
+                `New ${user.role} account registered`,
+            targetType: 'User',
+            targetId: user._id,
+            metadata: {
+                role: user.role,
+                email: user.email
+            },
+            req,
+            status: 'success'
+        });
 
-        // Create token
         const token = createToken(user);
-
 
         return res.status(201).json({
             token,
@@ -145,8 +153,6 @@ const login = async (req, res) => {
             });
         }
 
-
-        // Find user
         const user = await User.findOne({
             email: email.trim().toLowerCase()
         });
@@ -157,8 +163,6 @@ const login = async (req, res) => {
             });
         }
 
-
-        // Check account status
         if (!user.isActive) {
             return res.status(403).json({
                 message:
@@ -166,8 +170,6 @@ const login = async (req, res) => {
             });
         }
 
-
-        // Compare password
         const isMatch = await bcrypt.compare(
             password,
             user.password
@@ -179,16 +181,26 @@ const login = async (req, res) => {
             });
         }
 
-
-        // Update last login
         user.lastLogin = new Date();
 
         await user.save();
 
+        await createActivityLog({
+            userId: user._id,
+            action: 'USER_LOGIN',
+            module: 'AUTH',
+            description:
+                `${user.role} logged into SmartLease`,
+            targetType: 'User',
+            targetId: user._id,
+            metadata: {
+                role: user.role
+            },
+            req,
+            status: 'success'
+        });
 
-        // Create token
         const token = createToken(user);
-
 
         return res.json({
             token,
@@ -229,14 +241,11 @@ const getMe = async (req, res) => {
             });
         }
 
-
-        // Optional additional safety check
         if (!user.isActive) {
             return res.status(403).json({
                 message: 'Your account is inactive'
             });
         }
-
 
         return res.json(user);
 

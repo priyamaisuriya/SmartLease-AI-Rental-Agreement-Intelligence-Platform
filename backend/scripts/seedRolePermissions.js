@@ -6,25 +6,38 @@ const RolePermissions = require('../models/RolePermissions');
 const rolePermissions = {
     tenant: [
         'dashboard',
+
         'property-view',
         'property-search',
+
+        'rental-view',
+        'rental-book',
+        'rental-cancel',
+
         'agreement-history',
         'agreement-view',
         'agreement-analysis',
         'agreement-summary',
         'clause-explanation',
         'risk-detection',
+
         'rent-reminders',
+
         'profile',
         'feedback'
     ],
 
     landlord: [
         'dashboard',
+
         'property-view',
         'property-create',
         'property-update',
         'property-delete',
+
+        'rental-view',
+        'rental-manage',
+
         'agreement-history',
         'agreement-view',
         'agreement-upload',
@@ -32,7 +45,9 @@ const rolePermissions = {
         'agreement-summary',
         'clause-explanation',
         'risk-detection',
+
         'rent-reminders',
+
         'tenant-management',
         'reports',
         'feedback',
@@ -49,22 +64,24 @@ const seedRolePermissions = async () => {
 
         console.log('MongoDB connected');
 
-        for (const roleData of rolePermissions) {
+        for (const [role, permissions] of Object.entries(rolePermissions)) {
+
             await RolePermissions.findOneAndUpdate(
-                { role: roleData.role },
+                { role },
                 {
                     $set: {
-                        permissions: roleData.permissions
+                        permissions
                     }
                 },
                 {
                     upsert: true,
-                    new: true
+                    new: true,
+                    setDefaultsOnInsert: true
                 }
             );
 
             console.log(
-                `Permissions updated for role: ${roleData.role}`
+                `Permissions updated for role: ${role} `
             );
         }
 
@@ -75,12 +92,16 @@ const seedRolePermissions = async () => {
         process.exit(0);
 
     } catch (error) {
-        console.error('Error seeding role permissions:', error);
+        console.error(
+            'Error seeding role permissions:',
+            error
+        );
 
         await mongoose.connection.close();
 
         process.exit(1);
     }
 };
+
 
 seedRolePermissions();

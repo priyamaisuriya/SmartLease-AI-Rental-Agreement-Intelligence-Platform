@@ -2,15 +2,18 @@ const Rental = require('../models/Rental');
 const Property = require('../models/Property');
 const User = require('../models/User');
 
+const {
+    createActivityLog
+} = require('../services/activityLogService');
+
 
 // ============================================================
 // BOOK PROPERTY
-// POST /api/rentals/book
-// TENANT ONLY
 // ============================================================
 
 const bookProperty = async (req, res) => {
     try {
+
         const tenant = await User.findById(req.user.id)
             .select('role isActive');
 
@@ -44,8 +47,8 @@ const bookProperty = async (req, res) => {
             });
         }
 
-        // Find property
-        const property = await Property.findById(propertyId);
+        const property =
+            await Property.findById(propertyId);
 
         if (!property) {
             return res.status(404).json({
@@ -53,30 +56,30 @@ const bookProperty = async (req, res) => {
             });
         }
 
-        // Property must be available
         if (property.status !== 'available') {
             return res.status(400).json({
                 message: 'Property is no longer available'
             });
         }
 
-        // Prevent tenant from booking the same property again
-        const existingRental = await Rental.findOne({
-            property: property._id,
-            tenant: req.user.id,
-            status: {
-                $in: ['pending', 'active']
-            }
-        });
+        const existingRental =
+            await Rental.findOne({
+                property: property._id,
+                tenant: req.user.id,
+                status: {
+                    $in: ['pending', 'active']
+                }
+            });
 
         if (existingRental) {
             return res.status(400).json({
-                message: 'You already have an active rental for this property'
+                message:
+                    'You already have an active rental for this property'
             });
         }
 
-        // Validate dates if provided
         if (startDate && endDate) {
+
             const start = new Date(startDate);
             const end = new Date(endDate);
 
@@ -91,41 +94,37 @@ const bookProperty = async (req, res) => {
 
             if (end <= start) {
                 return res.status(400).json({
-                    message: 'End date must be after start date'
+                    message:
+                        'End date must be after start date'
                 });
             }
         }
 
-        /*
-          Atomic availability check.
-    
-          This prevents two tenants from successfully
-          changing the same available property at the
-          same time.
-        */
-        const lockedProperty = await Property.findOneAndUpdate(
-            {
-                _id: property._id,
-                status: 'available'
-            },
-            {
-                $set: {
-                    status: 'rented'
+        const lockedProperty =
+            await Property.findOneAndUpdate(
+                {
+                    _id: property._id,
+                    status: 'available'
+                },
+                {
+                    $set: {
+                        status: 'rented'
+                    }
+                },
+                {
+                    new: true
                 }
-            },
-            {
-                new: true
-            }
-        );
+            );
 
         if (!lockedProperty) {
             return res.status(409).json({
-                message: 'Property was just booked by another tenant'
+                message:
+                    'Property was just booked by another tenant'
             });
         }
 
         try {
-            // Create rental after successfully reserving property
+
             const rental = await Rental.create({
                 property: property._id,
                 landlord: property.landlord,
@@ -134,23 +133,53 @@ const bookProperty = async (req, res) => {
                 startDate: startDate || null,
                 endDate: endDate || null,
                 monthlyRent: property.monthlyRent,
-                securityDeposit: property.securityDeposit,
+                securityDeposit:
+                    property.securityDeposit,
                 status: 'active'
             });
 
-            const populatedRental = await Rental.findById(rental._id)
-                .populate('property')
-                .populate('landlord', 'name email phone')
-                .populate('tenant', 'name email phone');
+            const populatedRental =
+                await Rental.findById(rental._id)
+                    .populate('property')
+                    .populate(
+                        'landlord',
+                        'name email phone'
+                    )
+                    .populate(
+                        'tenant',
+                        'name email phone'
+                    );
+
+            await createActivityLog({
+                userId: req.user.id,
+                action: 'RENTAL_BOOKED',
+                module: 'RENTAL',
+                description:
+                    `Tenant booked property "${property.title}"`,
+                targetType: 'Rental',
+                targetId: rental._id,
+                metadata: {
+                    propertyId: property._id,
+                    landlordId: property.landlord,
+                    monthlyRent:
+                        rental.monthlyRent,
+                    startDate:
+                        rental.startDate,
+                    endDate:
+                        rental.endDate
+                },
+                req,
+                status: 'success'
+            });
 
             return res.status(201).json({
-                message: 'Property booked successfully',
+                message:
+                    'Property booked successfully',
                 rental: populatedRental
             });
 
         } catch (rentalError) {
 
-            // If Rental creation fails, release the property
             await Property.findOneAndUpdate(
                 {
                     _id: property._id,
@@ -167,7 +196,11 @@ const bookProperty = async (req, res) => {
         }
 
     } catch (err) {
-        console.error('Book property error:', err.message);
+
+        console.error(
+            'Book property error:',
+            err.message
+        );
 
         return res.status(500).json({
             message: 'Server error'
@@ -178,18 +211,20 @@ const bookProperty = async (req, res) => {
 
 // ============================================================
 // GET TENANT RENTALS
-// GET /api/rentals/my-rentals
-// TENANT
 // ============================================================
 
 const getMyRentals = async (req, res) => {
     try {
+
         const rentals = await Rental.find({
             tenant: req.user.id
         })
             .sort({ createdAt: -1 })
             .populate('property')
-            .populate('landlord', 'name email phone');
+            .populate(
+                'landlord',
+                'name email phone'
+            );
 
         return res.json({
             count: rentals.length,
@@ -197,7 +232,11 @@ const getMyRentals = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Get tenant rentals error:', err.message);
+
+        console.error(
+            'Get tenant rentals error:',
+            err.message
+        );
 
         return res.status(500).json({
             message: 'Server error'
@@ -208,18 +247,20 @@ const getMyRentals = async (req, res) => {
 
 // ============================================================
 // GET LANDLORD RENTALS
-// GET /api/rentals/my-properties
-// LANDLORD
 // ============================================================
 
 const getLandlordRentals = async (req, res) => {
     try {
+
         const rentals = await Rental.find({
             landlord: req.user.id
         })
             .sort({ createdAt: -1 })
             .populate('property')
-            .populate('tenant', 'name email phone');
+            .populate(
+                'tenant',
+                'name email phone'
+            );
 
         return res.json({
             count: rentals.length,
@@ -227,6 +268,7 @@ const getLandlordRentals = async (req, res) => {
         });
 
     } catch (err) {
+
         console.error(
             'Get landlord rentals error:',
             err.message
@@ -241,16 +283,22 @@ const getLandlordRentals = async (req, res) => {
 
 // ============================================================
 // GET RENTAL BY ID
-// GET /api/rentals/:id
-// TENANT / LANDLORD
 // ============================================================
 
 const getRentalById = async (req, res) => {
     try {
-        const rental = await Rental.findById(req.params.id)
-            .populate('property')
-            .populate('landlord', 'name email phone')
-            .populate('tenant', 'name email phone');
+
+        const rental =
+            await Rental.findById(req.params.id)
+                .populate('property')
+                .populate(
+                    'landlord',
+                    'name email phone'
+                )
+                .populate(
+                    'tenant',
+                    'name email phone'
+                );
 
         if (!rental) {
             return res.status(404).json({
@@ -258,7 +306,6 @@ const getRentalById = async (req, res) => {
             });
         }
 
-        // Only landlord or tenant involved in rental can view it
         const userId = req.user.id;
 
         if (
@@ -267,13 +314,15 @@ const getRentalById = async (req, res) => {
             req.user.role !== 'admin'
         ) {
             return res.status(403).json({
-                message: 'You do not have access to this rental'
+                message:
+                    'You do not have access to this rental'
             });
         }
 
         return res.json(rental);
 
     } catch (err) {
+
         console.error(
             'Get rental by ID error:',
             err.message
@@ -288,13 +337,13 @@ const getRentalById = async (req, res) => {
 
 // ============================================================
 // CANCEL RENTAL
-// PUT /api/rentals/:id/cancel
-// TENANT / LANDLORD
 // ============================================================
 
 const cancelRental = async (req, res) => {
     try {
-        const rental = await Rental.findById(req.params.id);
+
+        const rental =
+            await Rental.findById(req.params.id);
 
         if (!rental) {
             return res.status(404).json({
@@ -310,9 +359,14 @@ const cancelRental = async (req, res) => {
         const isLandlord =
             rental.landlord.toString() === userId;
 
-        if (!isTenant && !isLandlord && req.user.role !== 'admin') {
+        if (
+            !isTenant &&
+            !isLandlord &&
+            req.user.role !== 'admin'
+        ) {
             return res.status(403).json({
-                message: 'You do not have access to this rental'
+                message:
+                    'You do not have access to this rental'
             });
         }
 
@@ -321,7 +375,8 @@ const cancelRental = async (req, res) => {
             rental.status === 'completed'
         ) {
             return res.status(400).json({
-                message: `Rental is already ${rental.status}`
+                message:
+                    `Rental is already ${rental.status}`
             });
         }
 
@@ -329,7 +384,6 @@ const cancelRental = async (req, res) => {
 
         await rental.save();
 
-        // Make property available again
         await Property.findOneAndUpdate(
             {
                 _id: rental.property,
@@ -342,12 +396,33 @@ const cancelRental = async (req, res) => {
             }
         );
 
+        await createActivityLog({
+            userId: req.user.id,
+            action: 'RENTAL_CANCELLED',
+            module: 'RENTAL',
+            description:
+                'Rental was cancelled',
+            targetType: 'Rental',
+            targetId: rental._id,
+            metadata: {
+                propertyId: rental.property,
+                tenantId: rental.tenant,
+                landlordId: rental.landlord,
+                cancelledByRole:
+                    req.user.role
+            },
+            req,
+            status: 'success'
+        });
+
         return res.json({
-            message: 'Rental cancelled successfully',
+            message:
+                'Rental cancelled successfully',
             rental
         });
 
     } catch (err) {
+
         console.error(
             'Cancel rental error:',
             err.message

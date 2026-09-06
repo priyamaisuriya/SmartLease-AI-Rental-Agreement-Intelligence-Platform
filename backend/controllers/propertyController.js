@@ -1,6 +1,10 @@
 const Property = require('../models/Property');
 const User = require('../models/User');
 
+const {
+    createActivityLog
+} = require('../services/activityLogService');
+
 
 // ============================================================
 // CREATE PROPERTY
@@ -10,7 +14,9 @@ const User = require('../models/User');
 
 const createProperty = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('role isActive');
+
+        const user = await User.findById(req.user.id)
+            .select('role isActive');
 
         if (!user) {
             return res.status(404).json({
@@ -46,7 +52,6 @@ const createProperty = async (req, res) => {
             securityDeposit
         } = req.body;
 
-        // Required fields
         if (
             !title ||
             !propertyType ||
@@ -79,13 +84,35 @@ const createProperty = async (req, res) => {
             status: 'available'
         });
 
+        await createActivityLog({
+            userId: req.user.id,
+            action: 'PROPERTY_CREATED',
+            module: 'PROPERTY',
+            description:
+                `Property "${property.title}" was created`,
+            targetType: 'Property',
+            targetId: property._id,
+            metadata: {
+                propertyType: property.propertyType,
+                city: property.city,
+                state: property.state,
+                monthlyRent: property.monthlyRent
+            },
+            req,
+            status: 'success'
+        });
+
         return res.status(201).json({
             message: 'Property created successfully',
             property
         });
 
     } catch (err) {
-        console.error('Create property error:', err.message);
+
+        console.error(
+            'Create property error:',
+            err.message
+        );
 
         return res.status(500).json({
             message: 'Server error'
@@ -96,12 +123,11 @@ const createProperty = async (req, res) => {
 
 // ============================================================
 // GET MY PROPERTIES
-// GET /api/properties/my-properties
-// LANDLORD ONLY
 // ============================================================
 
 const getMyProperties = async (req, res) => {
     try {
+
         const properties = await Property.find({
             landlord: req.user.id
         })
@@ -114,7 +140,11 @@ const getMyProperties = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Get my properties error:', err.message);
+
+        console.error(
+            'Get my properties error:',
+            err.message
+        );
 
         return res.status(500).json({
             message: 'Server error'
@@ -125,12 +155,11 @@ const getMyProperties = async (req, res) => {
 
 // ============================================================
 // GET AVAILABLE PROPERTIES
-// GET /api/properties
-// TENANT / AUTHENTICATED USERS
 // ============================================================
 
 const getAvailableProperties = async (req, res) => {
     try {
+
         const {
             city,
             state,
@@ -161,14 +190,17 @@ const getAvailableProperties = async (req, res) => {
         }
 
         if (minRent || maxRent) {
+
             filter.monthlyRent = {};
 
             if (minRent) {
-                filter.monthlyRent.$gte = Number(minRent);
+                filter.monthlyRent.$gte =
+                    Number(minRent);
             }
 
             if (maxRent) {
-                filter.monthlyRent.$lte = Number(maxRent);
+                filter.monthlyRent.$lte =
+                    Number(maxRent);
             }
         }
 
@@ -182,6 +214,7 @@ const getAvailableProperties = async (req, res) => {
         });
 
     } catch (err) {
+
         console.error(
             'Get available properties error:',
             err.message
@@ -196,12 +229,11 @@ const getAvailableProperties = async (req, res) => {
 
 // ============================================================
 // GET PROPERTY BY ID
-// GET /api/properties/:id
-// AUTHENTICATED USERS
 // ============================================================
 
 const getPropertyById = async (req, res) => {
     try {
+
         const property = await Property.findById(req.params.id)
             .populate('landlord', 'name email phone');
 
@@ -214,6 +246,7 @@ const getPropertyById = async (req, res) => {
         return res.json(property);
 
     } catch (err) {
+
         console.error(
             'Get property by ID error:',
             err.message
@@ -228,13 +261,13 @@ const getPropertyById = async (req, res) => {
 
 // ============================================================
 // UPDATE PROPERTY
-// PUT /api/properties/:id
-// LANDLORD OWNER ONLY
 // ============================================================
 
 const updateProperty = async (req, res) => {
     try {
-        const property = await Property.findById(req.params.id);
+
+        const property =
+            await Property.findById(req.params.id);
 
         if (!property) {
             return res.status(404).json({
@@ -242,14 +275,16 @@ const updateProperty = async (req, res) => {
             });
         }
 
-        // Ownership check
-        if (property.landlord.toString() !== req.user.id) {
+        if (
+            property.landlord.toString() !==
+            req.user.id
+        ) {
             return res.status(403).json({
-                message: 'You can only update your own property'
+                message:
+                    'You can only update your own property'
             });
         }
 
-        // Do not allow landlord to manually change rental status
         const allowedFields = [
             'title',
             'description',
@@ -266,13 +301,35 @@ const updateProperty = async (req, res) => {
             'securityDeposit'
         ];
 
+        const changedFields = [];
+
         allowedFields.forEach((field) => {
+
             if (req.body[field] !== undefined) {
-                property[field] = req.body[field];
+
+                property[field] =
+                    req.body[field];
+
+                changedFields.push(field);
             }
         });
 
         await property.save();
+
+        await createActivityLog({
+            userId: req.user.id,
+            action: 'PROPERTY_UPDATED',
+            module: 'PROPERTY',
+            description:
+                `Property "${property.title}" was updated`,
+            targetType: 'Property',
+            targetId: property._id,
+            metadata: {
+                changedFields
+            },
+            req,
+            status: 'success'
+        });
 
         return res.json({
             message: 'Property updated successfully',
@@ -280,6 +337,7 @@ const updateProperty = async (req, res) => {
         });
 
     } catch (err) {
+
         console.error(
             'Update property error:',
             err.message
@@ -294,13 +352,13 @@ const updateProperty = async (req, res) => {
 
 // ============================================================
 // DELETE / DEACTIVATE PROPERTY
-// DELETE /api/properties/:id
-// LANDLORD OWNER ONLY
 // ============================================================
 
 const deleteProperty = async (req, res) => {
     try {
-        const property = await Property.findById(req.params.id);
+
+        const property =
+            await Property.findById(req.params.id);
 
         if (!property) {
             return res.status(404).json({
@@ -308,14 +366,16 @@ const deleteProperty = async (req, res) => {
             });
         }
 
-        // Ownership check
-        if (property.landlord.toString() !== req.user.id) {
+        if (
+            property.landlord.toString() !==
+            req.user.id
+        ) {
             return res.status(403).json({
-                message: 'You can only remove your own property'
+                message:
+                    'You can only remove your own property'
             });
         }
 
-        // Don't delete rented property
         if (property.status === 'rented') {
             return res.status(400).json({
                 message:
@@ -327,12 +387,30 @@ const deleteProperty = async (req, res) => {
 
         await property.save();
 
+        await createActivityLog({
+            userId: req.user.id,
+            action: 'PROPERTY_DEACTIVATED',
+            module: 'PROPERTY',
+            description:
+                `Property "${property.title}" was deactivated`,
+            targetType: 'Property',
+            targetId: property._id,
+            metadata: {
+                previousStatus: 'available',
+                newStatus: 'inactive'
+            },
+            req,
+            status: 'success'
+        });
+
         return res.json({
-            message: 'Property deactivated successfully',
+            message:
+                'Property deactivated successfully',
             property
         });
 
     } catch (err) {
+
         console.error(
             'Delete property error:',
             err.message
