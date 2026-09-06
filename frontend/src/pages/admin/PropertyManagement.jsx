@@ -1,15 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, CheckCircle, XCircle } from 'lucide-react';
 import DataTable from '../../components/admin/DataTable';
 import StatusBadge from '../../components/admin/StatusBadge';
-import { adminPropertiesData } from '../../data/adminMockData';
+import { Link } from 'react-router-dom';
+import api from '../../services/api';
 
 const PropertyManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredData = adminPropertiesData.filter(item => 
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/properties');
+      
+      const formattedProperties = res.data.properties.map(prop => ({
+        id: prop._id,
+        title: prop.title,
+        description: prop.description,
+        location: `${prop.city || ''}, ${prop.state || ''}`.replace(/^, | ,$/g, '') || 'No location',
+        owner: prop.landlord?.name || 'Unknown',
+        ownerEmail: prop.landlord?.email || 'N/A',
+        ownerPhone: prop.landlord?.phone || 'N/A',
+        rent: prop.price || 0,
+        type: prop.propertyType ? prop.propertyType.charAt(0).toUpperCase() + prop.propertyType.slice(1) : 'Unknown',
+        status: prop.status ? prop.status.charAt(0).toUpperCase() + prop.status.slice(1) : 'Unknown',
+        created: new Date(prop.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        images: prop.images || []
+      }));
+      
+      setProperties(formattedProperties);
+    } catch (err) {
+      console.error('Failed to fetch properties:', err);
+      setError('Failed to load properties.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const filteredData = properties.filter(item => 
     item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    item.owner.toLowerCase().includes(searchTerm.toLowerCase())
+    item.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
@@ -19,7 +57,13 @@ const PropertyManagement = () => {
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-border overflow-hidden flex-shrink-0">
-            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt="property" className="w-full h-full object-cover" />
+            <img 
+              src={row.images && row.images.length > 0 
+                ? (row.images[0].startsWith('http') ? row.images[0] : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${row.images[0]}`) 
+                : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"} 
+              alt="property" 
+              className="w-full h-full object-cover" 
+            />
           </div>
           <div>
             <div className="font-medium text-ink">{row.title}</div>
@@ -46,23 +90,25 @@ const PropertyManagement = () => {
       accessor: 'actions',
       render: (row) => (
         <div className="flex items-center gap-2">
-          <button className="p-1 text-text-muted hover:text-lease-600 transition-colors" title="View Details">
+          <Link 
+            to={`/admin/properties/${row.id}`}
+            className="p-1 text-text-muted hover:text-lease-600 transition-colors" 
+            title="View Details"
+          >
             <Eye className="w-4 h-4" />
-          </button>
-          {row.status === 'Pending' && (
-            <>
-              <button className="p-1 text-text-muted hover:text-good-600 transition-colors" title="Approve">
-                <CheckCircle className="w-4 h-4" />
-              </button>
-              <button className="p-1 text-text-muted hover:text-bad-600 transition-colors" title="Reject">
-                <XCircle className="w-4 h-4" />
-              </button>
-            </>
-          )}
+          </Link>
         </div>
       )
     }
   ];
+
+  if (loading && properties.length === 0) {
+    return <div className="p-8 text-center text-text-muted fade-in">Loading properties...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-risk-red fade-in">{error}</div>;
+  }
 
   return (
     <div className="space-y-6 fade-in pb-8">
@@ -96,10 +142,10 @@ const PropertyManagement = () => {
         <DataTable columns={columns} data={filteredData} />
         
         <div className="p-4 border-t border-border flex items-center justify-between text-sm text-text-muted bg-paper/30">
-          <div>Showing 1 to {filteredData.length} of {filteredData.length} results</div>
+          <div>Showing {filteredData.length > 0 ? 1 : 0} to {filteredData.length} of {filteredData.length} results</div>
           <div className="flex gap-1">
-            <button className="px-3 py-1 border border-border rounded hover:bg-border disabled:opacity-50">Prev</button>
-            <button className="px-3 py-1 border border-border rounded hover:bg-border disabled:opacity-50">Next</button>
+            <button className="px-3 py-1 border border-border rounded hover:bg-border disabled:opacity-50" disabled>Prev</button>
+            <button className="px-3 py-1 border border-border rounded hover:bg-border disabled:opacity-50" disabled>Next</button>
           </div>
         </div>
       </div>
