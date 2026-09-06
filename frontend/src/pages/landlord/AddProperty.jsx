@@ -71,16 +71,10 @@ const AddProperty = () => {
   const totalSteps = 6;
 
   const [step, setStep] = useState(1);
-
-  const [loadingProperty, setLoadingProperty] =
-    useState(false);
-
+  const [loadingProperty, setLoadingProperty] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState('');
-
-  const [successMessage, setSuccessMessage] =
-    useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -102,7 +96,6 @@ const AddProperty = () => {
     furnishing: 'furnished',
 
     amenities: [],
-
     images: [],
   });
 
@@ -116,7 +109,7 @@ const AddProperty = () => {
   ];
 
   /*
-   * Generic form field updater
+   * Update form field
    */
   const updateField = (field, value) => {
     setFormData((prev) => ({
@@ -129,7 +122,7 @@ const AddProperty = () => {
   };
 
   /*
-   * Load existing property when editing.
+   * Load property when editing
    */
   useEffect(() => {
     if (!isEditMode) {
@@ -142,7 +135,7 @@ const AddProperty = () => {
 
       try {
         const response = await api.get(
-          `/ properties / ${editPropertyId} `
+          `/properties/${editPropertyId}`
         );
 
         const property =
@@ -159,52 +152,40 @@ const AddProperty = () => {
           title: property.title || '',
 
           propertyType:
-            property.propertyType ||
-            'apartment',
+            property.propertyType || 'apartment',
 
           bedrooms:
-            property.bedrooms ??
-            '',
+            property.bedrooms ?? '',
 
           bathrooms:
-            property.bathrooms ??
-            '',
+            property.bathrooms ?? '',
 
           area:
-            property.area ??
-            '',
+            property.area ?? '',
 
           description:
-            property.description ||
-            '',
+            property.description || '',
 
           address:
-            property.address ||
-            '',
+            property.address || '',
 
           city:
-            property.city ||
-            '',
+            property.city || '',
 
           state:
-            property.state ||
-            '',
+            property.state || '',
 
           pincode:
-            property.pincode ||
-            '',
+            property.pincode || '',
 
           landmark:
-            property.landmark ||
-            '',
+            property.landmark || '',
 
           monthlyRent:
-            property.monthlyRent ??
-            '',
+            property.monthlyRent ?? '',
 
           securityDeposit:
-            property.securityDeposit ??
-            '',
+            property.securityDeposit ?? '',
 
           availableFrom:
             property.availableFrom
@@ -214,8 +195,7 @@ const AddProperty = () => {
               : '',
 
           furnishing:
-            property.furnishing ||
-            'furnished',
+            property.furnishing || 'furnished',
 
           amenities:
             Array.isArray(property.amenities)
@@ -227,13 +207,11 @@ const AddProperty = () => {
               ? property.images
               : [],
         });
-
       } catch (err) {
         console.error(
           'Failed to load property:',
           err.response?.status,
-          err.response?.data ||
-          err.message
+          err.response?.data || err.message
         );
 
         setError(
@@ -249,7 +227,7 @@ const AddProperty = () => {
   }, [editPropertyId, isEditMode]);
 
   /*
-   * Amenity selection
+   * Toggle amenities
    */
   const toggleAmenity = (amenity) => {
     setFormData((prev) => {
@@ -267,13 +245,14 @@ const AddProperty = () => {
     });
 
     setError('');
+    setSuccessMessage('');
   };
 
   /*
-   * Image selection.
+   * Image selection
    *
-   * The current backend doesn't have an image-upload
-   * endpoint yet, so these are kept as local previews.
+   * Current backend does not upload property images.
+   * Images selected here are local previews only.
    */
   const handleImageSelection = (event) => {
     const files = Array.from(
@@ -303,8 +282,7 @@ const AddProperty = () => {
 
     const imagePreviews = validFiles.map(
       (file) => ({
-        id:
-          `${file.name} -${file.lastModified} -${Math.random()} `,
+        id: `${file.name}-${file.lastModified}-${Math.random()}`,
         name: file.name,
         file,
         preview: URL.createObjectURL(file),
@@ -322,6 +300,9 @@ const AddProperty = () => {
     event.target.value = '';
   };
 
+  /*
+   * Remove selected image
+   */
   const removeImage = (imageId) => {
     setFormData((prev) => {
       const image = prev.images.find(
@@ -340,19 +321,25 @@ const AddProperty = () => {
       return {
         ...prev,
         images: prev.images.filter(
-          (item) =>
-            item.id !== imageId
+          (item) => {
+            if (typeof item === 'string') {
+              return item !== imageId;
+            }
+
+            return item.id !== imageId;
+          }
         ),
       };
     });
   };
 
   /*
-   * BHK display.
+   * BHK display
    */
   const bhkText = useMemo(() => {
-    const bedrooms =
-      Number(formData.bedrooms);
+    const bedrooms = Number(
+      formData.bedrooms
+    );
 
     if (!bedrooms) {
       return 'Property';
@@ -374,7 +361,7 @@ const AddProperty = () => {
   }, [formData.bedrooms]);
 
   /*
-   * Validate each step.
+   * Validate current step
    */
   const validateStep = () => {
     setError('');
@@ -483,6 +470,9 @@ const AddProperty = () => {
     return true;
   };
 
+  /*
+   * Next step
+   */
   const nextStep = () => {
     if (!validateStep()) {
       return;
@@ -496,6 +486,9 @@ const AddProperty = () => {
     );
   };
 
+  /*
+   * Previous step
+   */
   const prevStep = () => {
     setError('');
 
@@ -505,8 +498,7 @@ const AddProperty = () => {
   };
 
   /*
-   * Convert form data to the current backend
-   * Property model.
+   * Build backend payload
    */
   const buildPayload = () => {
     const payload = {
@@ -553,17 +545,13 @@ const AddProperty = () => {
     };
 
     /*
-     * Only send images that are already URLs.
-     *
-     * Local File objects cannot be sent through
-     * the current JSON property API.
+     * Existing image URLs only.
      */
     const existingImageUrls =
-      formData.images
-        .filter(
-          (image) =>
-            typeof image === 'string'
-        );
+      formData.images.filter(
+        (image) =>
+          typeof image === 'string'
+      );
 
     if (existingImageUrls.length > 0) {
       payload.images =
@@ -571,15 +559,11 @@ const AddProperty = () => {
     }
 
     /*
-     * These fields will be added to the backend
-     * Property schema in the next backend step:
+     * These fields are kept because they exist
+     * in the frontend property form.
      *
-     * landmark
-     * availableFrom
-     * amenities
-     *
-     * They remain in the form so we don't lose the
-     * intended functionality.
+     * The current backend controller may ignore
+     * them until those fields are supported there.
      */
     if (formData.landmark.trim()) {
       payload.landmark =
@@ -600,7 +584,7 @@ const AddProperty = () => {
   };
 
   /*
-   * Publish / Update property.
+   * Submit property
    */
   const handleSubmit = async () => {
     if (!validateStep()) {
@@ -617,7 +601,7 @@ const AddProperty = () => {
 
       if (isEditMode) {
         await api.put(
-          `/ properties / ${editPropertyId} `,
+          `/properties/${editPropertyId}`,
           payload
         );
 
@@ -635,16 +619,11 @@ const AddProperty = () => {
         );
       }
 
-      /*
-       * Give the success message a moment to show,
-       * then return to My Properties.
-       */
       setTimeout(() => {
         navigate(
           '/landlord/properties'
         );
       }, 800);
-
     } catch (err) {
       console.error(
         'Failed to save property:',
@@ -664,17 +643,18 @@ const AddProperty = () => {
     }
   };
 
+  /*
+   * Loading state for edit mode
+   */
   if (loadingProperty) {
     return (
       <div className="space-y-6 fade-in pb-12 max-w-4xl mx-auto">
         <div className="bg-white rounded-xl shadow-sm border border-border p-12 text-center">
-
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink mx-auto mb-4"></div>
 
           <p className="text-text-muted">
             Loading property details...
           </p>
-
         </div>
       </div>
     );
@@ -685,7 +665,6 @@ const AddProperty = () => {
 
       {/* Header */}
       <div className="flex items-center gap-4">
-
         <Link
           to="/landlord/properties"
           className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
@@ -706,7 +685,6 @@ const AddProperty = () => {
               : 'Fill in the details to list your property on SmartLease AI.'}
           </p>
         </div>
-
       </div>
 
       {/* Error */}
@@ -724,9 +702,8 @@ const AddProperty = () => {
         </div>
       )}
 
-      {/* Progress Bar */}
+      {/* Progress */}
       <div className="bg-white rounded-xl shadow-sm border border-border p-6">
-
         <div className="flex items-center justify-between relative">
 
           <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-border -z-10 -translate-y-1/2"></div>
@@ -737,7 +714,7 @@ const AddProperty = () => {
               width: `${((step - 1) /
                   (totalSteps - 1)) *
                 100
-                }% `,
+                }%`,
             }}
           ></div>
 
@@ -747,14 +724,13 @@ const AddProperty = () => {
                 key={i}
                 className="flex flex-col items-center gap-2 bg-white px-2"
               >
-
                 <div
-                  className={`w - 8 h - 8 rounded - full flex items - center justify - center text - sm font - bold transition - colors ${step > i + 1
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step > i + 1
                       ? 'bg-lease-600 text-white'
                       : step === i + 1
                         ? 'bg-lease-600 text-white ring-4 ring-lease-100'
                         : 'bg-paper text-text-muted border border-border'
-                    } `}
+                    }`}
                 >
                   {step > i + 1 ? (
                     <Check className="w-4 h-4" />
@@ -764,23 +740,20 @@ const AddProperty = () => {
                 </div>
 
                 <span
-                  className={`text - xs font - medium hidden sm:block ${step === i + 1
+                  className={`text-xs font-medium hidden sm:block ${step === i + 1
                       ? 'text-ink'
                       : 'text-text-muted'
-                    } `}
+                    }`}
                 >
                   {stepTitles[i]}
                 </span>
-
               </div>
             )
           )}
-
         </div>
-
       </div>
 
-      {/* Form Content */}
+      {/* Form */}
       <div className="bg-white rounded-xl shadow-sm border border-border p-6 sm:p-8 min-h-[400px]">
 
         <h2 className="text-xl font-semibold text-ink mb-6">
@@ -849,9 +822,7 @@ const AddProperty = () => {
                 </label>
 
                 <select
-                  value={
-                    formData.bedrooms
-                  }
+                  value={formData.bedrooms}
                   onChange={(e) =>
                     updateField(
                       'bedrooms',
@@ -863,27 +834,32 @@ const AddProperty = () => {
                   <option value="">
                     Select BHK
                   </option>
+
                   <option value="0">
                     1 RK / Studio
                   </option>
+
                   <option value="1">
                     1 BHK
                   </option>
+
                   <option value="2">
                     2 BHK
                   </option>
+
                   <option value="3">
                     3 BHK
                   </option>
+
                   <option value="4">
                     4 BHK
                   </option>
+
                   <option value="5">
                     5+ BHK
                   </option>
                 </select>
               </div>
-
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -928,7 +904,6 @@ const AddProperty = () => {
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
                 />
               </div>
-
             </div>
 
             <div>
@@ -949,7 +924,6 @@ const AddProperty = () => {
                 className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500 resize-none"
               />
             </div>
-
           </div>
         )}
 
@@ -1018,7 +992,6 @@ const AddProperty = () => {
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
               </div>
-
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1061,9 +1034,7 @@ const AddProperty = () => {
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
               </div>
-
             </div>
-
           </div>
         )}
 
@@ -1072,7 +1043,6 @@ const AddProperty = () => {
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
 
             <div className="p-4 bg-lease-50 border border-lease-200 rounded-lg mb-6">
-
               <p className="text-sm text-lease-800">
                 <strong>Important:</strong>{' '}
                 The rent specified here is the{' '}
@@ -1083,7 +1053,6 @@ const AddProperty = () => {
                 uploaded rental agreement during AI
                 analysis.
               </p>
-
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1131,7 +1100,6 @@ const AddProperty = () => {
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
               </div>
-
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1187,9 +1155,7 @@ const AddProperty = () => {
                   </option>
                 </select>
               </div>
-
             </div>
-
           </div>
         )}
 
@@ -1214,12 +1180,11 @@ const AddProperty = () => {
                   return (
                     <label
                       key={amenity}
-                      className={`flex items - center gap - 3 p - 3 border rounded - lg cursor - pointer transition - colors ${selected
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selected
                           ? 'border-lease-500 bg-lease-50'
                           : 'border-border hover:bg-paper'
-                        } `}
+                        }`}
                     >
-
                       <input
                         type="checkbox"
                         checked={selected}
@@ -1234,12 +1199,10 @@ const AddProperty = () => {
                       <span className="text-sm font-medium text-ink">
                         {amenity}
                       </span>
-
                     </label>
                   );
                 }
               )}
-
             </div>
 
             {formData.amenities.length >
@@ -1247,13 +1210,13 @@ const AddProperty = () => {
                 <p className="text-xs text-text-muted mt-5">
                   {formData.amenities.length}{' '}
                   amenit
-                  {formData.amenities.length === 1
+                  {formData.amenities.length ===
+                    1
                     ? 'y'
                     : 'ies'}{' '}
                   selected.
                 </p>
               )}
-
           </div>
         )}
 
@@ -1289,9 +1252,7 @@ const AddProperty = () => {
                   }
                   className="hidden"
                 />
-
               </label>
-
             </div>
 
             <p className="text-xs text-text-muted mt-4 text-center">
@@ -1299,7 +1260,6 @@ const AddProperty = () => {
               Minimum 3 images recommended.
             </p>
 
-            {/* Selected images */}
             {formData.images.length >
               0 && (
                 <div className="mt-6">
@@ -1313,11 +1273,11 @@ const AddProperty = () => {
                     <span className="text-xs text-text-muted">
                       {formData.images.length}{' '}
                       image
-                      {formData.images.length !== 1
+                      {formData.images.length !==
+                        1
                         ? 's'
                         : ''}
                     </span>
-
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -1345,10 +1305,10 @@ const AddProperty = () => {
                             }
                             className="relative aspect-square rounded-lg overflow-hidden border border-border bg-paper group"
                           >
-
                             <img
                               src={preview}
-                              alt={`Property ${index + 1} `}
+                              alt={`Property ${index + 1
+                                }`}
                               className="w-full h-full object-cover"
                             />
 
@@ -1364,17 +1324,13 @@ const AddProperty = () => {
                             >
                               <X className="w-4 h-4" />
                             </button>
-
                           </div>
                         );
                       }
                     )}
-
                   </div>
-
                 </div>
               )}
-
           </div>
         )}
 
@@ -1399,10 +1355,8 @@ const AddProperty = () => {
                   : 'publishing'}{' '}
                 your property.
               </p>
-
             </div>
 
-            {/* Summary */}
             <div className="p-5 border border-border rounded-lg bg-white">
 
               <h4 className="font-semibold text-ink mb-4">
@@ -1448,8 +1402,7 @@ const AddProperty = () => {
                         formData.area
                       ).toLocaleString(
                         'en-IN'
-                      )
-                      } sq.ft`
+                      )} sq.ft`
                       : 'Not specified'}
                   </p>
                 </div>
@@ -1529,33 +1482,30 @@ const AddProperty = () => {
                       : 'None selected'}
                   </p>
                 </div>
-
               </div>
-
             </div>
-
           </div>
         )}
-
       </div>
 
-      {/* Footer Navigation */}
+      {/* FOOTER BUTTONS */}
       <div className="flex items-center justify-between pt-4">
 
+        {/* Back */}
         <button
           type="button"
           onClick={prevStep}
           disabled={step === 1 || saving}
-          className={`px - 6 py - 2.5 rounded - lg text - sm font - medium transition - colors ${step === 1
+          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${step === 1
               ? 'opacity-0 cursor-default'
               : 'bg-paper border border-border text-ink hover:bg-border/50'
-            } `}
+            }`}
         >
           Back
         </button>
 
+        {/* Continue */}
         {step < totalSteps ? (
-
           <button
             type="button"
             onClick={nextStep}
@@ -1564,9 +1514,7 @@ const AddProperty = () => {
           >
             Continue
           </button>
-
         ) : (
-
           <div className="flex gap-3">
 
             <Link
@@ -1594,13 +1542,9 @@ const AddProperty = () => {
                   ? 'Update Property'
                   : 'Publish Property'}
             </button>
-
           </div>
-
         )}
-
       </div>
-
     </div>
   );
 };

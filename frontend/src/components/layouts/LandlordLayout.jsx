@@ -147,7 +147,7 @@ const LandlordLayout = () => {
       </aside>
 
       {/* Main column */}
-      <div className="flex-1 min-w-0 flex flex-col h-screen">
+      <div className="flex-1 min-w-0 flex flex-col h-screen min-h-0">
         {/* Topbar */}
         <header className="px-10 pt-[26px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -194,7 +194,10 @@ const LandlordLayout = () => {
         </header>
 
         {/* Page container */}
-        <main id="page-container" className="flex-1 overflow-y-auto scroll-thin px-10 pt-5 pb-12">
+        <main
+          id="page-container"
+          className="flex-1 min-h-0 overflow-y-auto scroll-thin px-10 pt-5 pb-12"
+        >
           <Outlet />
         </main>
       </div>
