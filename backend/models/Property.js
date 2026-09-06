@@ -2,14 +2,12 @@ const mongoose = require('mongoose');
 
 const PropertySchema = new mongoose.Schema(
     {
-        // Landlord who owns the property
         landlord: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             required: true,
         },
 
-        // Basic information
         title: {
             type: String,
             required: true,
@@ -37,11 +35,20 @@ const PropertySchema = new mongoose.Schema(
             required: true,
         },
 
-        // Location
+        // -----------------------------
+        // LOCATION
+        // -----------------------------
+
         address: {
             type: String,
             required: true,
             trim: true,
+        },
+
+        landmark: {
+            type: String,
+            trim: true,
+            default: '',
         },
 
         city: {
@@ -62,7 +69,10 @@ const PropertySchema = new mongoose.Schema(
             default: '',
         },
 
-        // Property details
+        // -----------------------------
+        // PROPERTY DETAILS
+        // -----------------------------
+
         bedrooms: {
             type: Number,
             min: 0,
@@ -91,7 +101,15 @@ const PropertySchema = new mongoose.Schema(
             default: 'unfurnished',
         },
 
-        // Rental information
+        amenities: {
+            type: [String],
+            default: [],
+        },
+
+        // -----------------------------
+        // RENTAL INFORMATION
+        // -----------------------------
+
         monthlyRent: {
             type: Number,
             required: true,
@@ -104,7 +122,15 @@ const PropertySchema = new mongoose.Schema(
             default: 0,
         },
 
-        // Property availability
+        availableFrom: {
+            type: Date,
+            default: null,
+        },
+
+        // -----------------------------
+        // PROPERTY STATUS
+        // -----------------------------
+
         status: {
             type: String,
             enum: [
@@ -115,7 +141,10 @@ const PropertySchema = new mongoose.Schema(
             default: 'available',
         },
 
-        // Property images
+        // -----------------------------
+        // IMAGES
+        // -----------------------------
+
         images: {
             type: [String],
             default: [],
