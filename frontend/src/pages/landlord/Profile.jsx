@@ -174,7 +174,7 @@ const Profile = () => {
                 </div>
               </div>
 
-              <div className="space-y-6">
+              {/* <div className="space-y-6">
                 <h3 className="font-semibold text-ink border-b border-border pb-2">Business Address</h3>
                 <div className="flex items-start gap-3 text-sm">
                   <MapPin className="w-5 h-5 text-text-muted flex-shrink-0" />
@@ -185,7 +185,7 @@ const Profile = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
 

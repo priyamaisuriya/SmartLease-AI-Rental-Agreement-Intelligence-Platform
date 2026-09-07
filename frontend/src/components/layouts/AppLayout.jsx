@@ -63,7 +63,7 @@ const NAV_ITEMS = [
     id: '/notifications',
     label: 'Notifications',
     icon: Bell,
-    badge: '4',
+    // badge: '4',
     section: 'Account',
   },
   {

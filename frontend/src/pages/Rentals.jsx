@@ -129,11 +129,10 @@ const Rentals = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
+            className={`pb-3 text-sm font-medium transition-colors ${activeTab === tab.id
                 ? 'border-b-2 border-lease-600 text-lease-600'
                 : 'text-text-muted hover:text-ink'
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -144,7 +143,7 @@ const Rentals = () => {
         {rentals.length > 0 ? (
           (() => {
             const filteredRentals = rentals.filter(r => activeTab === 'all' || r.status === activeTab);
-            
+
             if (filteredRentals.length === 0) {
               return (
                 <div className="p-10 text-center text-text-muted bg-white border border-border rounded-xl2">
@@ -165,8 +164,8 @@ const Rentals = () => {
                 return `${baseUrl}${cleanPath}`;
               };
 
-              const image = property.images && property.images.length > 0 
-                ? getImageUrl(property.images[0]) 
+              const image = property.images && property.images.length > 0
+                ? getImageUrl(property.images[0])
                 : null;
 
               return (
@@ -245,6 +244,16 @@ const Rentals = () => {
                           </p>
                         </div>
 
+                        <div>
+                          <p className="text-xs text-text-faint">
+                            End Date
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium text-ink">
+                            {formatDate(r.endDate)}
+                          </p>
+                        </div>
+                        
                         <div>
                           <p className="text-xs text-text-faint">
                             Contractual Rent

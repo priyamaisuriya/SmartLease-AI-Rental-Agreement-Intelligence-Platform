@@ -241,13 +241,12 @@ const Agreements = () => {
 
                 {/* Actions */}
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                  {/* View */}
+
+                  {/* View / Analysis */}
                   <button
                     type="button"
                     onClick={() =>
-                      navigate(
-                        `/landlord/analysis/${a._id}`
-                      )
+                      navigate(`/properties/${a.property?._id}`)
                     }
                     className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink hover:bg-paper"
                   >
@@ -258,9 +257,7 @@ const Agreements = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      navigate(
-                        `/landlord/analysis/${a._id}`
-                      )
+                      navigate(`/analysis/${a._id}`)
                     }
                     className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink hover:bg-paper"
                   >
@@ -271,9 +268,7 @@ const Agreements = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      navigate(
-                        `/landlord/chat/${a._id}`
-                      )
+                      navigate(`/chat/${a._id}`)
                     }
                     className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink hover:bg-paper"
                   >
@@ -295,7 +290,9 @@ const Agreements = () => {
                       Download
                     </a>
                   )}
+
                 </div>
+
               </div>
             );
           })
