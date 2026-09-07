@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   BrainCircuit,
@@ -12,14 +12,129 @@ import api from '../../services/api';
 
 const AiChat = () => {
   const { agreementId } = useParams();
+  const navigate = useNavigate();
 
   const [agreement, setAgreement] = useState(null);
+  const [rentals, setRentals] = useState([]);
+  const [agreements, setAgreements] = useState([]);
+
+  const [selectedRental, setSelectedRental] = useState('');
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+
+  /*
+   * Find agreement belonging to selected rental.
+   */
+  const getAgreementForRental = (rentalId) => {
+    if (!rentalId) {
+      return null;
+    }
+
+    return agreements.find((a) => {
+      const agreementRentalId =
+        typeof a.rental === 'object'
+          ? a.rental?._id
+          : a.rental;
+
+      return (
+        String(agreementRentalId) ===
+        String(rentalId)
+      );
+    });
+  };
+
+  /*
+   * Load landlord rentals when no agreement
+   * has been selected yet.
+   *
+   * GET requests only — no Gemini usage.
+   */
+  useEffect(() => {
+    const loadRentalSelectionData = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const [rentalsResponse, agreementsResponse] =
+          await Promise.all([
+            api.get('/rentals/my-properties'),
+            api.get('/agreements/my-agreements'),
+          ]);
+
+        const rentalData =
+          rentalsResponse.data?.rentals ||
+          rentalsResponse.data ||
+          [];
+
+        const agreementData =
+          agreementsResponse.data?.agreements ||
+          agreementsResponse.data ||
+          [];
+
+        setRentals(
+          Array.isArray(rentalData)
+            ? rentalData
+            : []
+        );
+
+        setAgreements(
+          Array.isArray(agreementData)
+            ? agreementData
+            : []
+        );
+      } catch (err) {
+        console.error(
+          'Failed to load landlord rentals:',
+          err
+        );
+
+        setError(
+          err.response?.data?.message ||
+          'Failed to load rentals.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!agreementId) {
+      loadRentalSelectionData();
+    }
+  }, [agreementId]);
+
+  /*
+   * Handle rental selection.
+   */
+  const handleRentalChange = (e) => {
+    const rentalId = e.target.value;
+
+    setSelectedRental(rentalId);
+
+    if (!rentalId) {
+      return;
+    }
+
+    const selectedAgreement =
+      getAgreementForRental(rentalId);
+
+    if (!selectedAgreement) {
+      setError(
+        'No agreement has been uploaded for this rental yet.'
+      );
+      return;
+    }
+
+    setError('');
+
+    navigate(
+      `/landlord/chat/${selectedAgreement._id}`
+    );
+  };
 
   const suggestedQuestions = agreementId
     ? [
@@ -28,106 +143,83 @@ const AiChat = () => {
       'What penalties are mentioned?',
       'Who is responsible for painting?',
     ]
-    : [
-      'Draft a rent reminder email.',
-      'What are standard lock-in periods?',
-      'How to handle tenant disputes?',
-      'Generate a notice for inspection.',
-    ];
+    : [];
 
   /*
    * Load agreement details and previous AI questions/answers.
    *
-   * These are GET requests only.
+   * GET requests only.
    * They do NOT consume Gemini requests.
    */
   useEffect(() => {
     const loadChatData = async () => {
+      if (!agreementId) {
+        return;
+      }
+
       setLoading(true);
       setError('');
 
       try {
-        if (agreementId) {
-          const agreementResponse = await api.get(
-            `/agreements/${agreementId}`
-          );
+        const agreementResponse = await api.get(
+          `/agreements/${agreementId}`
+        );
 
-          const agreementData =
-            agreementResponse.data.agreement ||
-            agreementResponse.data;
+        const agreementData =
+          agreementResponse.data?.agreement ||
+          agreementResponse.data;
 
-          setAgreement(agreementData);
+        setAgreement(agreementData);
 
-          const historyResponse = await api.get(
-            `/ai/agreements/${agreementId}/history`
-          );
+        const historyResponse = await api.get(
+          `/ai/agreements/${agreementId}/history`
+        );
 
-          const analyses =
-            historyResponse.data?.analyses || [];
+        const analyses =
+          historyResponse.data?.analyses || [];
 
-          /*
-           * Backend returns newest first.
-           * We convert question analyses into chronological
-           * user → AI message pairs.
-           */
-          const questionAnalyses = analyses
-            .filter(
-              (analysis) =>
-                analysis.type === 'question'
-            )
-            .reverse();
+        const questionAnalyses = analyses
+          .filter(
+            (analysis) =>
+              analysis.type === 'question'
+          )
+          .reverse();
 
-          const historyMessages = [];
+        const historyMessages = [];
 
-          questionAnalyses.forEach((analysis) => {
-            if (analysis.input) {
-              historyMessages.push({
-                role: 'user',
-                text: analysis.input,
-              });
-            }
+        questionAnalyses.forEach((analysis) => {
+          if (analysis.input) {
+            historyMessages.push({
+              role: 'user',
+              text: analysis.input,
+            });
+          }
 
-            if (analysis.result) {
-              historyMessages.push({
-                role: 'ai',
-                text: analysis.result,
-              });
-            }
-          });
-
-          const agreementName =
-            agreementData?.title ||
-            agreementData?.originalFileName ||
-            'this agreement';
-
-          const initialMessage = {
-            role: 'ai',
-            text:
-              historyMessages.length > 0
-                ? `Welcome back. I can help you understand "${agreementName}". You can ask another question about this agreement.`
-                : `Hello! I can help you understand the agreement "${agreementName}". What would you like to know about it?`,
-          };
-
-          setMessages([
-            initialMessage,
-            ...historyMessages,
-          ]);
-        } else {
-          /*
-           * General landlord assistant mode.
-           *
-           * The current backend AI endpoint requires an
-           * agreement ID, so general questions cannot be
-           * sent to Gemini through the agreement Q&A API.
-           */
-          setMessages([
-            {
+          if (analysis.result) {
+            historyMessages.push({
               role: 'ai',
-              text:
-                'Hello! I am your AI Property Assistant. Select an agreement to ask questions about its specific terms and clauses.',
-            },
-          ]);
-        }
+              text: analysis.result,
+            });
+          }
+        });
+
+        const agreementName =
+          agreementData?.title ||
+          agreementData?.originalFileName ||
+          'this agreement';
+
+        const initialMessage = {
+          role: 'ai',
+          text:
+            historyMessages.length > 0
+              ? `Welcome back. I can help you understand "${agreementName}". You can ask another question about this agreement.`
+              : `Hello! I can help you understand the agreement "${agreementName}". What would you like to know about it?`,
+        };
+
+        setMessages([
+          initialMessage,
+          ...historyMessages,
+        ]);
       } catch (err) {
         console.error(
           'Failed to load AI chat:',
@@ -155,10 +247,10 @@ const AiChat = () => {
   }, [agreementId]);
 
   /*
-   * Send question to the existing backend AI endpoint.
+   * Send question to Gemini through existing backend.
    *
    * IMPORTANT:
-   * This POST request DOES consume one Gemini request.
+   * This POST request consumes one Gemini request.
    */
   const handleSend = async (e) => {
     e?.preventDefault();
@@ -169,9 +261,6 @@ const AiChat = () => {
       return;
     }
 
-    /*
-     * General AI mode currently has no backend endpoint.
-     */
     if (!agreementId) {
       setMessages((previous) => [
         ...previous,
@@ -182,7 +271,7 @@ const AiChat = () => {
         {
           role: 'ai',
           text:
-            'Please open a specific rental agreement before asking agreement-related AI questions.',
+            'Please select a rental agreement before asking agreement-related AI questions.',
         },
       ]);
 
@@ -253,17 +342,172 @@ const AiChat = () => {
     setInput(question);
   };
 
+  /*
+   * ============================================================
+   * RENTAL SELECTION PAGE
+   * ============================================================
+   */
+
+  if (!agreementId && loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl mx-auto fade-in">
+
+        <div className="flex items-center gap-4 mb-4">
+          <Link
+            to="/landlord"
+            className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+
+          <div>
+            <h1 className="text-xl font-display font-bold text-ink flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-lease-600" />
+              AI Chat
+            </h1>
+
+            <p className="text-xs text-text-muted mt-0.5">
+              Select a rental to continue
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 bg-white border border-border rounded-xl shadow-sm flex items-center justify-center">
+          <RefreshCw className="w-8 h-8 text-lease-600 animate-spin" />
+        </div>
+
+      </div>
+    );
+  }
+
+  if (!agreementId) {
+    return (
+      <div className="fade-in max-w-4xl mx-auto">
+
+        <div className="flex items-center gap-4 mb-6">
+
+          <Link
+            to="/landlord"
+            className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+
+          <div>
+            <h1 className="text-xl font-display font-bold text-ink flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-lease-600" />
+              AI Chat
+            </h1>
+
+            <p className="text-xs text-text-muted mt-1">
+              Select a rental agreement to start an AI conversation.
+            </p>
+          </div>
+
+        </div>
+
+        {error && (
+          <div className="mb-4 bg-warn-50 border border-warn-500/20 rounded-lg px-4 py-3">
+            <p className="text-sm text-warn-800">
+              {error}
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white border border-border rounded-xl shadow-sm p-6">
+
+          <div className="flex items-center gap-3 mb-5">
+
+            <div className="w-10 h-10 rounded-lg bg-lease-50 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-lease-600" />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-ink">
+                Select Rental
+              </h2>
+
+              <p className="text-xs text-text-muted mt-1">
+                Choose one of your rentals to open its agreement.
+              </p>
+            </div>
+
+          </div>
+
+          <select
+            value={selectedRental}
+            onChange={handleRentalChange}
+            className="w-full px-4 py-3 bg-paper border border-border rounded-lg text-sm font-medium text-ink focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
+          >
+            <option value="">
+              Select a rental...
+            </option>
+
+            {rentals.map((rental) => {
+              const property =
+                rental.property || {};
+
+              const selectedAgreement =
+                getAgreementForRental(rental._id);
+
+              return (
+                <option
+                  key={rental._id}
+                  value={rental._id}
+                >
+                  {property.title ||
+                    property.name ||
+                    'Rental Property'}
+                  {' — '}
+                  ₹
+                  {Number(
+                    rental.monthlyRent || 0
+                  ).toLocaleString('en-IN')}
+                  /month
+                  {!selectedAgreement
+                    ? ' — No agreement'
+                    : ''}
+                </option>
+              );
+            })}
+          </select>
+
+          {rentals.length === 0 && (
+            <div className="mt-5 text-center py-8">
+
+              <FileText className="w-10 h-10 text-text-faint mx-auto mb-3" />
+
+              <p className="text-sm font-medium text-ink">
+                No rentals found
+              </p>
+
+              <p className="text-xs text-text-muted mt-1">
+                Your rentals will appear here once they are available.
+              </p>
+
+            </div>
+          )}
+
+        </div>
+
+      </div>
+    );
+  }
+
+  /*
+   * ============================================================
+   * AGREEMENT CHAT
+   * ============================================================
+   */
+
   if (loading) {
     return (
       <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl mx-auto fade-in">
 
         <div className="flex items-center gap-4 mb-4 flex-shrink-0">
+
           <Link
-            to={
-              agreementId
-                ? `/landlord/analysis/${agreementId}`
-                : '/landlord'
-            }
+            to="/landlord/chat"
             className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -279,16 +523,21 @@ const AiChat = () => {
               Loading conversation...
             </p>
           </div>
+
         </div>
 
         <div className="flex-1 bg-white border border-border rounded-xl shadow-sm flex items-center justify-center">
+
           <div className="text-center">
+
             <RefreshCw className="w-8 h-8 text-lease-600 animate-spin mx-auto mb-3" />
 
             <p className="text-sm text-text-muted">
               Loading AI conversation...
             </p>
+
           </div>
+
         </div>
 
       </div>
@@ -301,33 +550,25 @@ const AiChat = () => {
       {/* Header */}
       <div className="flex items-center gap-4 mb-4 flex-shrink-0">
 
-        {agreementId ? (
-          <Link
-            to={`/landlord/analysis/${agreementId}`}
-            className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        ) : (
-          <Link
-            to="/landlord"
-            className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        )}
+        <Link
+          to="/landlord/chat"
+          className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
+          title="Change Rental"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
 
         <div className="min-w-0">
 
           <h1 className="text-xl font-display font-bold text-ink flex items-center gap-2">
+
             <BrainCircuit className="w-5 h-5 text-lease-600" />
 
-            {agreementId
-              ? 'Ask AI About This Agreement'
-              : 'AI Property Assistant'}
+            Ask AI About This Agreement
+
           </h1>
 
-          {agreementId && agreement && (
+          {agreement && (
             <div className="flex items-center gap-1.5 mt-1 text-xs text-text-muted">
 
               <FileText className="w-3.5 h-3.5" />
@@ -347,6 +588,7 @@ const AiChat = () => {
           </p>
 
         </div>
+
       </div>
 
       {/* Error */}
@@ -373,7 +615,6 @@ const AiChat = () => {
                 }`}
             >
 
-              {/* AI avatar */}
               {msg.role === 'ai' && (
                 <div className="w-8 h-8 rounded-full bg-lease-100 flex items-center justify-center flex-shrink-0">
 
@@ -382,7 +623,6 @@ const AiChat = () => {
                 </div>
               )}
 
-              {/* Message */}
               <div
                 className={`max-w-[80%] rounded-2xl p-4 text-sm shadow-sm whitespace-pre-line ${msg.role === 'user'
                     ? 'bg-lease-600 text-white rounded-tr-sm'
@@ -392,7 +632,6 @@ const AiChat = () => {
                 {msg.text}
               </div>
 
-              {/* User avatar */}
               {msg.role === 'user' && (
                 <div className="w-8 h-8 rounded-full bg-ink flex items-center justify-center flex-shrink-0">
 
@@ -405,12 +644,13 @@ const AiChat = () => {
 
           ))}
 
-          {/* AI typing/loading state */}
           {sending && (
             <div className="flex gap-4 justify-start">
 
               <div className="w-8 h-8 rounded-full bg-lease-100 flex items-center justify-center flex-shrink-0">
+
                 <BrainCircuit className="w-4 h-4 text-lease-600" />
+
               </div>
 
               <div className="bg-paper border border-border text-text-muted rounded-2xl rounded-tl-sm p-4 text-sm flex items-center gap-2">
@@ -426,7 +666,6 @@ const AiChat = () => {
 
         </div>
 
-        {/* Suggested Questions */}
         {messages.length === 1 && !sending && (
           <div className="p-4 bg-paper/50 border-t border-border flex flex-wrap gap-2">
 
@@ -445,7 +684,6 @@ const AiChat = () => {
           </div>
         )}
 
-        {/* Input Area */}
         <div className="p-4 border-t border-border bg-white">
 
           <form
@@ -459,11 +697,7 @@ const AiChat = () => {
               onChange={(e) =>
                 setInput(e.target.value)
               }
-              placeholder={
-                agreementId
-                  ? 'Ask a question about this agreement...'
-                  : 'Select an agreement to ask agreement questions...'
-              }
+              placeholder="Ask a question about this agreement..."
               disabled={sending}
               className="w-full pl-4 pr-12 py-3 bg-paper border border-border rounded-xl text-sm focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500 shadow-inner disabled:opacity-60"
             />
@@ -485,12 +719,10 @@ const AiChat = () => {
 
           </form>
 
-          {agreementId && (
-            <p className="text-[11px] text-text-muted mt-2">
-              Questions are answered using the contents of this
-              agreement.
-            </p>
-          )}
+          <p className="text-[11px] text-text-muted mt-2">
+            Questions are answered using the contents of this
+            agreement.
+          </p>
 
         </div>
 

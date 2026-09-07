@@ -11,9 +11,9 @@ const NAV_ITEMS = [
   { id: '/landlord/agreements', label: 'Agreements', icon: FileText, section: 'Agreements & AI' },
   { id: '/landlord/analysis', label: 'AI Analysis', icon: BrainCircuit, section: 'Agreements & AI' },
   { id: '/landlord/chat', label: 'AI Chat', icon: MessageSquare, section: 'Agreements & AI' },
-  { id: '/landlord/reminders', label: 'Reminders', icon: Calendar, section: 'Agreements & AI' },
+  // { id: '/landlord/reminders', label: 'Reminders', icon: Calendar, section: 'Agreements & AI' },
   { id: '/landlord/reports', label: 'Reports', icon: BarChart3, section: 'Agreements & AI' },
-  // { id: '/landlord/notifications', label: 'Notifications', icon: Bell,  section: 'Communication' }, badge: '1'
+  { id: '/landlord/notifications', label: 'Notifications', icon: Bell,  section: 'Communication' }, // badge: '1'
   { id: '/landlord/feedback', label: 'Feedback', icon: MessageSquare, section: 'Communication' },
   { id: '/landlord/profile', label: 'Profile', icon: User, section: 'Account' },
   { id: '/landlord/settings', label: 'Settings', icon: Settings, section: 'Account' },

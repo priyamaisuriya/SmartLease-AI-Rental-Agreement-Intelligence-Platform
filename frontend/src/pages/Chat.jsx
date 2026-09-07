@@ -110,7 +110,7 @@ const Chat = () => {
         // -------------------------------------------------
 
         const agreementResponse = await api.get(
-          `/ agreements / ${ agreementId } `
+          `/agreements/${ agreementId }`
         );
 
         console.log(
@@ -144,7 +144,7 @@ const Chat = () => {
 
         try {
           const historyResponse = await api.get(
-            `/ ai / agreements / ${ agreementId }/history`
+            `/ai/agreements/${ agreementId }/history`
           );
 
 console.log(
