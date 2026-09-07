@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { adminStats, recentActivity as mockRecentActivity } from '../../data/adminMockData';
+import { recentActivity as mockRecentActivity } from '../../data/adminMockData';
+import api from '../../services/api';
 
 const QuickActionCard = ({ title, desc, buttonText, icon, to }) => (
   <div className="bg-white border border-border p-[24px] rounded-[8px] flex flex-col hover:border-gold-soft transition-colors group cursor-pointer">
@@ -16,12 +17,31 @@ const QuickActionCard = ({ title, desc, buttonText, icon, to }) => (
 );
 
 const AdminDashboard = () => {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/dashboard');
+      setDashboardData(res.data);
+    } catch (err) {
+      console.error('Failed to load dashboard data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const kpis = {
-    totalUsers: adminStats.totalUsers.value,
-    activeUsers: '11,200',
-    totalProperties: adminStats.totalProperties.value,
-    totalAgreementsAnalyzed: adminStats.agreementsAnalyzed.value,
-    monthlyRevenue: '1,24,000',
+    totalUsers: dashboardData?.users?.total || 0,
+    activeUsers: dashboardData?.users?.active || 0,
+    totalProperties: dashboardData?.properties?.total || 0,
+    totalAgreementsAnalyzed: dashboardData?.aiUsage?.successful || 0,
+    monthlyRevenue: '1,24,000', // Static placeholder
   };
 
   const platformAlerts = [
@@ -35,6 +55,11 @@ const AdminDashboard = () => {
   return (
     <div className="fade-in space-y-6">
       {/* KPI Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20 bg-border border border-border rounded-[8px] mb-[26px]">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold text-gold"></div>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border border border-border rounded-[8px] mb-[26px] overflow-hidden">
         <div className="bg-white p-[22px]">
           <span className="font-mono text-[10.5px] tracking-[0.1em] text-text-muted uppercase block font-semibold">Total Users</span>
@@ -57,6 +82,7 @@ const AdminDashboard = () => {
           <span className="font-mono text-[11.5px] text-text-faint">Monthly recurring</span>
         </div>
       </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-[26px] mb-[26px] items-start">
         {/* Quick Actions */}
