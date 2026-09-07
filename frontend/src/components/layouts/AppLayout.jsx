@@ -53,12 +53,12 @@ const NAV_ITEMS = [
     icon: MessageSquare,
     section: 'Agreements',
   },
-  {
-    id: '/reminders',
-    label: 'Reminders',
-    icon: Bell,
-    section: 'Agreements',
-  },
+  // {
+  //   id: '/reminders',
+  //   label: 'Reminders',
+  //   icon: Bell,
+  //   section: 'Agreements',
+  // },
   {
     id: '/notifications',
     label: 'Notifications',
