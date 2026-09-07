@@ -32,15 +32,15 @@ const RiskCard = ({ type, title, desc, action }) => {
 
   return (
     <div
-      className={`p - 4 border rounded - xl flex items - start gap - 4 ${styles} `}
+      className={`p-4 border rounded-xl flex items-start gap-4 ${styles}`}
     >
       <Icon
-        className={`w - 6 h - 6 flex - shrink - 0 mt - 0.5 ${type === 'high'
+        className={`w-6 h-6 flex-shrink-0 mt-0.5 ${type === 'high'
             ? 'text-bad-600'
             : type === 'medium'
               ? 'text-warn-600'
               : 'text-good-600'
-          } `}
+          }`}
       />
 
       <div>
@@ -67,6 +67,12 @@ const AgreementAnalysis = () => {
   const [agreement, setAgreement] = useState(null);
   const [summary, setSummary] = useState(null);
   const [risks, setRisks] = useState(null);
+
+  // Rental selection
+  const [rentals, setRentals] = useState([]);
+  const [agreements, setAgreements] = useState([]);
+  const [selectedRental, setSelectedRental] = useState('');
+  const [rentalLoading, setRentalLoading] = useState(false);
 
   const [loading, setLoading] = useState(!!agreementId);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -98,7 +104,7 @@ const AgreementAnalysis = () => {
       return '—';
     }
 
-    return `₹${number.toLocaleString('en-IN')} `;
+    return `₹${number.toLocaleString('en-IN')}`;
   };
 
   const formatDate = (value) => {
@@ -117,6 +123,136 @@ const AgreementAnalysis = () => {
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  /*
+   * ============================================================
+   * FIND AGREEMENT FOR RENTAL
+   * ============================================================
+   *
+   * Agreement.rental may be:
+   *
+   * 1. A plain ObjectId
+   * 2. A populated rental object
+   *
+   * So we handle both cases.
+   */
+
+  const getAgreementForRental = (rentalId) => {
+    if (!rentalId) {
+      return null;
+    }
+
+    return agreements.find((a) => {
+      const agreementRentalId =
+        typeof a.rental === 'object'
+          ? a.rental?._id
+          : a.rental;
+
+      return (
+        String(agreementRentalId) ===
+        String(rentalId)
+      );
+    });
+  };
+
+  /*
+   * ============================================================
+   * LOAD LANDLORD RENTALS FOR DROPDOWN
+   * ============================================================
+   *
+   * Only runs when there is no agreementId.
+   *
+   * These are GET requests.
+   * They do NOT call Gemini.
+   */
+
+  useEffect(() => {
+    const loadRentalSelectionData = async () => {
+      setRentalLoading(true);
+      setError('');
+
+      try {
+        const [
+          rentalsResponse,
+          agreementsResponse,
+        ] = await Promise.all([
+          api.get('/rentals/my-properties'),
+          api.get('/agreements/my-agreements'),
+        ]);
+
+        const rentalData =
+          rentalsResponse.data?.rentals ||
+          rentalsResponse.data ||
+          [];
+
+        const agreementData =
+          agreementsResponse.data?.agreements ||
+          agreementsResponse.data ||
+          [];
+
+        setRentals(
+          Array.isArray(rentalData)
+            ? rentalData
+            : []
+        );
+
+        setAgreements(
+          Array.isArray(agreementData)
+            ? agreementData
+            : []
+        );
+      } catch (err) {
+        console.error(
+          'Failed to load landlord rentals:',
+          err
+        );
+
+        setError(
+          err.response?.data?.message ||
+          'Failed to load rentals.'
+        );
+      } finally {
+        setRentalLoading(false);
+      }
+    };
+
+    if (!agreementId) {
+      loadRentalSelectionData();
+    }
+  }, [agreementId]);
+
+  /*
+   * ============================================================
+   * HANDLE RENTAL SELECTION
+   * ============================================================
+   */
+
+  const handleRentalChange = (e) => {
+    const rentalId = e.target.value;
+
+    setSelectedRental(rentalId);
+
+    if (!rentalId) {
+      setError('');
+      return;
+    }
+
+    const selectedAgreement =
+      getAgreementForRental(rentalId);
+
+    if (!selectedAgreement) {
+      setError(
+        'No agreement has been uploaded for this rental yet.'
+      );
+      return;
+    }
+
+    setError('');
+
+    navigate(
+      `/landlord/analysis/${selectedAgreement._id}`
+    );
   };
 
   /*
@@ -156,7 +292,10 @@ const AgreementAnalysis = () => {
          * That should NOT break the page.
          */
 
-        const [summaryResult, riskResult] = await Promise.allSettled([
+        const [
+          summaryResult,
+          riskResult,
+        ] = await Promise.allSettled([
           api.get(
             `/ai/agreements/${agreementId}/summary/latest`
           ),
@@ -204,7 +343,6 @@ const AgreementAnalysis = () => {
             );
           }
         }
-
       } catch (err) {
         console.error(
           'Failed to load agreement analysis:',
@@ -270,7 +408,6 @@ const AgreementAnalysis = () => {
         generatedBy: data.generatedBy,
         createdAt: data.createdAt,
       });
-
     } catch (err) {
       console.error(
         'Failed to generate summary:',
@@ -318,7 +455,6 @@ const AgreementAnalysis = () => {
         generatedBy: data.generatedBy,
         createdAt: data.createdAt,
       });
-
     } catch (err) {
       console.error(
         'Failed to detect risks:',
@@ -372,7 +508,6 @@ const AgreementAnalysis = () => {
         response.data.result ||
         ''
       );
-
     } catch (err) {
       console.error(
         'Failed to explain clause:',
@@ -392,9 +527,6 @@ const AgreementAnalysis = () => {
    * ============================================================
    * EXPORT REPORT
    * ============================================================
-   *
-   * Uses the browser print dialog.
-   * User can select "Save as PDF".
    */
 
   const exportReport = () => {
@@ -405,9 +537,6 @@ const AgreementAnalysis = () => {
    * ============================================================
    * AGREEMENT / RENTAL INFORMATION
    * ============================================================
-   *
-   * These are written defensively because the Agreement API may
-   * return populated references or only IDs.
    */
 
   const tenantName =
@@ -525,39 +654,122 @@ const AgreementAnalysis = () => {
    * ============================================================
    * NO AGREEMENT ID
    * ============================================================
+   *
+   * Instead of "Go to My Agreements", landlord gets a rental
+   * dropdown.
    */
 
   if (!agreementId) {
     return (
       <div className="fade-in max-w-6xl mx-auto space-y-6 pb-12">
+
         <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl2 border border-border bg-white mt-10 shadow-soft">
 
           <div className="grid h-16 w-16 place-items-center rounded-full bg-lease-50 text-lease-600 mb-5">
-            <FileText className="w-8 h-8" />
+            <BrainCircuit className="w-8 h-8" />
           </div>
 
           <h2 className="font-display text-2xl font-semibold text-ink">
-            Select an agreement to analyze
+            Select a Rental to Analyze
           </h2>
 
           <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
-            Choose an agreement from your list to view its AI summary,
-            risk analysis, and financial details.
+            Select one of your rentals to open its linked
+            rental agreement and use SmartLease AI analysis.
           </p>
 
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() =>
-                navigate('/landlord/agreements')
-              }
-              className="rounded-lg bg-ink px-6 py-2.5 text-sm font-semibold text-paper shadow-sm hover:bg-ink-dark transition-colors"
+          <div className="mt-8 w-full max-w-lg text-left">
+
+            <label
+              htmlFor="rental-select"
+              className="block text-sm font-semibold text-ink mb-2"
             >
-              Go to My Agreements
-            </button>
+              Select Rental
+            </label>
+
+            {rentalLoading ? (
+              <div className="flex items-center gap-2 px-4 py-3 border border-border rounded-lg bg-paper text-sm text-text-muted">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading your rentals...
+              </div>
+            ) : (
+              <select
+                id="rental-select"
+                value={selectedRental}
+                onChange={handleRentalChange}
+                className="w-full px-4 py-3 bg-paper border border-border rounded-lg text-sm text-ink focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
+              >
+                <option value="">
+                  Select a rental...
+                </option>
+
+                {rentals.map((rental) => {
+                  const property =
+                    rental.property || {};
+
+                  const propertyTitle =
+                    property.title ||
+                    property.name ||
+                    'Rental Property';
+
+                  const agreement =
+                    getAgreementForRental(
+                      rental._id
+                    );
+
+                  return (
+                    <option
+                      key={rental._id}
+                      value={rental._id}
+                    >
+                      {propertyTitle} — ₹
+                      {Number(
+                        rental.monthlyRent || 0
+                      ).toLocaleString('en-IN')}
+                      {!agreement
+                        ? ' — No agreement'
+                        : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+
+            {error && (
+              <div className="mt-4 bg-warn-50 border border-warn-500/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+
+                  <AlertTriangle className="w-5 h-5 text-warn-600 flex-shrink-0 mt-0.5" />
+
+                  <p className="text-sm text-warn-800">
+                    {error}
+                  </p>
+
+                </div>
+              </div>
+            )}
+
+            {!rentalLoading &&
+              rentals.length === 0 &&
+              !error && (
+                <div className="mt-4 bg-paper border border-border rounded-lg p-4">
+
+                  <p className="text-sm font-medium text-ink">
+                    No rentals found
+                  </p>
+
+                  <p className="text-xs text-text-muted mt-1">
+                    You do not currently have any rental
+                    records associated with your properties.
+                  </p>
+
+                </div>
+              )}
+
           </div>
 
         </div>
+
       </div>
     );
   }
@@ -587,7 +799,18 @@ const AgreementAnalysis = () => {
               'The requested agreement could not be found.'}
           </p>
 
-          <div className="mt-8">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/landlord/analysis')
+              }
+              className="rounded-lg bg-paper border border-border px-6 py-2.5 text-sm font-semibold text-ink shadow-sm hover:bg-border/50 transition-colors"
+            >
+              Change Rental
+            </button>
+
             <button
               type="button"
               onClick={() =>
@@ -597,9 +820,11 @@ const AgreementAnalysis = () => {
             >
               Back to Agreements
             </button>
+
           </div>
 
         </div>
+
       </div>
     );
   }
@@ -621,12 +846,16 @@ const AgreementAnalysis = () => {
 
         <div className="flex items-center gap-4">
 
-          <Link
-            to="/landlord/agreements"
+          <button
+            type="button"
+            onClick={() =>
+              navigate('/landlord/analysis')
+            }
             className="p-2 text-text-muted hover:bg-white rounded-lg border border-transparent hover:border-border transition-all"
+            title="Change Rental"
           >
             <ArrowLeft className="w-5 h-5" />
-          </Link>
+          </button>
 
           <div>
 
