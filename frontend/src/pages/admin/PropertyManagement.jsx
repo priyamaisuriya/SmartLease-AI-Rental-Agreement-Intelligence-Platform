@@ -24,7 +24,7 @@ const PropertyManagement = () => {
         owner: prop.landlord?.name || 'Unknown',
         ownerEmail: prop.landlord?.email || 'N/A',
         ownerPhone: prop.landlord?.phone || 'N/A',
-        rent: prop.price || 0,
+        rent: prop.monthlyRent || 0,
         type: prop.propertyType ? prop.propertyType.charAt(0).toUpperCase() + prop.propertyType.slice(1) : 'Unknown',
         status: prop.status ? prop.status.charAt(0).toUpperCase() + prop.status.slice(1) : 'Unknown',
         created: new Date(prop.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
