@@ -494,19 +494,12 @@ const Auth = () => {
             {/* FORGOT PASSWORD */}
             {isLogin && (
               <div className="flex justify-end -mt-2">
-
-                <button
-                  type="button"
-                  className="text-[12.5px] text-[#8A7658] hover:text-gold-deep transition-colors bg-transparent border-none p-0"
-                  onClick={() => {
-                    setError(
-                      'Password reset is not implemented yet.'
-                    );
-                  }}
+                <Link
+                  to="/forgot-password"
+                  className="text-[12.5px] text-[#8A7658] hover:text-gold-deep transition-colors"
                 >
                   Forgot password?
-                </button>
-
+                </Link>
               </div>
             )}
 

@@ -1,16 +1,68 @@
-import React, { useState } from 'react';
-import { Search, Filter, Eye, Download, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Eye, Download, Trash2, Loader2 } from 'lucide-react';
 import DataTable from '../../components/admin/DataTable';
 import StatusBadge from '../../components/admin/StatusBadge';
-import { adminAgreementsData } from '../../data/adminMockData';
+import api from '../../services/api';
 
 const AgreementsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [agreements, setAgreements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredData = adminAgreementsData.filter(item => 
+  useEffect(() => {
+    fetchAgreements();
+  }, []);
+
+  const fetchAgreements = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/agreements');
+      // res.data.agreements is the array
+      
+      const backendUrl = api.defaults.baseURL.replace('/api', '');
+      
+      const formatted = res.data.agreements.map(item => ({
+        id: item._id,
+        agreement: item.originalFileName || item.title,
+        tenant: item.tenant?.name || 'Unknown',
+        landlord: item.landlord?.name || 'Unknown',
+        property: item.property?.title || 'Not Linked',
+        date: new Date(item.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        analysis: item.status === 'terminated' ? 'Terminated' : 'Completed',
+        risk: null,
+        fileUrl: item.fileUrl?.startsWith('http') ? item.fileUrl : `${backendUrl}${item.fileUrl}`
+      }));
+      
+      setAgreements(formatted);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load agreements:', err);
+      setError('Failed to load agreements from the server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = agreements.filter(item => 
     item.agreement.toLowerCase().includes(searchTerm.toLowerCase()) || 
     item.tenant.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to completely delete this agreement? This action cannot be undone.')) return;
+    try {
+      await api.delete(`/admin/agreements/${id}`);
+      fetchAgreements();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete agreement');
+    }
+  };
+
+  const handleView = (fileUrl) => {
+    if (fileUrl) window.open(fileUrl, '_blank');
+  };
 
   const columns = [
     { 
@@ -45,13 +97,25 @@ const AgreementsManagement = () => {
       accessor: 'actions',
       render: (row) => (
         <div className="flex items-center gap-2">
-          <button className="p-1 text-text-muted hover:text-lease-600 transition-colors" title="View Details">
+          <button 
+            onClick={() => handleView(row.fileUrl)}
+            className="p-1 text-text-muted hover:text-lease-600 transition-colors" 
+            title="View Details"
+          >
             <Eye className="w-4 h-4" />
           </button>
-          <button className="p-1 text-text-muted hover:text-lease-600 transition-colors" title="Download Report">
+          <button 
+            onClick={() => handleView(row.fileUrl)}
+            className="p-1 text-text-muted hover:text-lease-600 transition-colors" 
+            title="Download Report"
+          >
             <Download className="w-4 h-4" />
           </button>
-          <button className="p-1 text-text-muted hover:text-bad-600 transition-colors" title="Remove">
+          <button 
+            onClick={() => handleDelete(row.id)}
+            className="p-1 text-text-muted hover:text-bad-600 transition-colors" 
+            title="Delete Agreement"
+          >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -88,7 +152,15 @@ const AgreementsManagement = () => {
           </div>
         </div>
 
-        <DataTable columns={columns} data={filteredData} />
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-gold" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 text-bad-600">{error}</div>
+        ) : (
+          <DataTable columns={columns} data={filteredData} />
+        )}
       </div>
     </div>
   );

@@ -9,7 +9,8 @@ const {
   getAllAgreements,
   getAgreementDetails,
   getAgreementStats,
-  terminateAgreement
+  terminateAgreement,
+  deleteAgreement
 } = require('../controllers/adminAgreementController');
 
 router.get(
@@ -38,6 +39,13 @@ router.put(
   auth,
   adminOnly,
   terminateAgreement
+);
+
+router.delete(
+  '/:id',
+  auth,
+  adminOnly,
+  deleteAgreement
 );
 
 module.exports = router;

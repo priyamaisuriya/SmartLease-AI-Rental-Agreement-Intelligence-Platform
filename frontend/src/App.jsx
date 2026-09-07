@@ -19,6 +19,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // =====================================================
 // TENANT PAGES
@@ -106,6 +108,16 @@ function App() {
         <Route
           path="/register"
           element={<Auth />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPassword />}
         />
 
         {/* =================================================

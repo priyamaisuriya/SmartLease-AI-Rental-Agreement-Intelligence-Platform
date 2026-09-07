@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const Agreement = require('../models/Agreement');
 const AgreementAnalysis = require('../models/AgreementAnalysis');
@@ -300,9 +300,54 @@ const terminateAgreement = async (req, res) => {
 };
 
 
+// =====================================================
+// DELETE AGREEMENT
+// DELETE /api/admin/agreements/:id
+// =====================================================
+
+const deleteAgreement = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: 'Invalid agreement ID'
+            });
+        }
+
+        const agreement = await Agreement.findById(id);
+
+        if (!agreement) {
+            return res.status(404).json({
+                message: 'Agreement not found'
+            });
+        }
+
+        // Also delete associated analyses
+        await AgreementAnalysis.deleteMany({ agreement: id });
+
+        await agreement.deleteOne();
+
+        return res.json({
+            message: 'Agreement deleted successfully'
+        });
+
+    } catch (err) {
+        console.error(
+            'Delete agreement error:',
+            err.message
+        );
+
+        return res.status(500).json({
+            message: 'Server error'
+        });
+    }
+};
+
 module.exports = {
     getAllAgreements,
     getAgreementDetails,
     getAgreementStats,
-    terminateAgreement
+    terminateAgreement,
+    deleteAgreement
 };

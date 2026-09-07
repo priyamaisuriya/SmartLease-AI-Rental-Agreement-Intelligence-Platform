@@ -114,7 +114,7 @@ const Feedback = () => {
                       className="p-1 transition-transform hover:scale-110 focus:outline-none"
                     >
                       <Star 
-                        className={`w-7 h-7 ${star <= formData.rating ? 'fill-warn-500 text-warn-500' : 'text-line hover:text-warn-300'}`} 
+                        className={`w-7 h-7 ${star <= formData.rating ? 'text-yellow-500 fill-yellow-500' : 'text-line hover:text-yellow-300'}`} 
                       />
                     </button>
                   ))}
@@ -207,7 +207,7 @@ const Feedback = () => {
                             {[...Array(5)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                className={`w-3.5 h-3.5 ${i < item.rating ? 'fill-warn-500 text-warn-500' : 'text-line'}`} 
+                                className={`w-3.5 h-3.5 ${i < item.rating ? 'text-yellow-500 fill-yellow-500' : 'text-line'}`} 
                               />
                             ))}
                           </div>

@@ -59,7 +59,7 @@ const FeedbackManagement = () => {
           {[...Array(5)].map((_, i) => (
             <Star 
               key={i} 
-              className={`w-4 h-4 ${i < row.rating ? 'fill-warn-500 text-warn-500' : 'text-line'}`} 
+              className={`w-4 h-4 ${i < row.rating ? 'fill-yellow-500 text-yellow-500' : 'text-line'}`} 
             />
           ))}
         </div>
