@@ -10,15 +10,23 @@ import api from '../services/api';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  // ============================================================
+  // USER STATE
+  // ============================================================
+
   const [user, setUser] = useState(() => {
     try {
-      const savedUser = localStorage.getItem('smartlease_user');
+      const savedUser =
+        localStorage.getItem('smartlease_user');
 
       return savedUser
         ? JSON.parse(savedUser)
         : null;
     } catch (error) {
-      console.error('Failed to read saved user:', error);
+      console.error(
+        'Failed to read saved user:',
+        error
+      );
 
       localStorage.removeItem('smartlease_user');
 
@@ -28,29 +36,38 @@ export function AuthProvider({ children }) {
 
   const [loading, setLoading] = useState(true);
 
-  // =====================================================
+  // ============================================================
   // LOAD CURRENT USER
-  // =====================================================
+  // ============================================================
 
   const loadUser = async () => {
-    const token = localStorage.getItem('smartlease_token');
+    const token =
+      localStorage.getItem('smartlease_token');
 
-    // No token = definitely logged out
     if (!token) {
       setUser(null);
-      localStorage.removeItem('smartlease_user');
+
+      localStorage.removeItem(
+        'smartlease_user'
+      );
+
       setLoading(false);
 
       return null;
     }
 
     try {
-      const response = await api.get('/auth/me');
+      const response =
+        await api.get('/auth/me');
 
       const currentUser =
-        response.data?.user || response.data;
+        response.data?.user ||
+        response.data;
 
-      if (!currentUser || !currentUser.role) {
+      if (
+        !currentUser ||
+        !currentUser.role
+      ) {
         throw new Error(
           'Invalid user information returned from server.'
         );
@@ -64,84 +81,117 @@ export function AuthProvider({ children }) {
       );
 
       return currentUser;
-
     } catch (error) {
       console.error(
         'Failed to load current user:',
         error.response?.status,
-        error.response?.data || error.message
+        error.response?.data ||
+          error.message
       );
 
-      /*
-       * IMPORTANT:
-       *
-       * Only remove authentication when backend
-       * explicitly says the token is invalid.
-       *
-       * Network errors / server errors should NOT
-       * automatically send the user to login.
-       */
-      if (error.response?.status === 401) {
-        localStorage.removeItem('smartlease_token');
-        localStorage.removeItem('smartlease_user');
+      if (
+        error.response?.status === 401
+      ) {
+        localStorage.removeItem(
+          'smartlease_token'
+        );
+
+        localStorage.removeItem(
+          'smartlease_user'
+        );
 
         setUser(null);
 
         return null;
       }
 
-      /*
-       * For 500 / network / temporary errors:
-       *
-       * Keep the previously saved user.
-       */
       return user;
-
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // INITIAL AUTH CHECK
-  // =====================================================
+  // ============================================================
+  // CHECK LOGIN WHEN APP STARTS
+  // ============================================================
 
   useEffect(() => {
     loadUser();
   }, []);
 
-  // =====================================================
-  // LOGIN
-  // =====================================================
+  // ============================================================
+  // LOGIN - STEP 1
+  // EMAIL + PASSWORD
+  //
+  // This does NOT create JWT.
+  // It only sends Login OTP.
+  // ============================================================
 
-  const login = async (email, password) => {
-    const response = await api.post('/auth/login', {
-      email,
-      password,
-    });
+  const login = async (
+    email,
+    password
+  ) => {
+    const response =
+      await api.post(
+        '/auth/login/send-otp',
+        {
+          email,
+          password,
+        }
+      );
 
-    const token = response.data?.token;
+    return response.data;
+  };
+
+  // ============================================================
+  // LOGIN - STEP 2
+  // VERIFY LOGIN OTP
+  //
+  // After successful OTP verification:
+  // JWT token is returned.
+  // ============================================================
+
+  const verifyLoginOtp = async (
+    email,
+    otp
+  ) => {
+    const response =
+      await api.post(
+        '/auth/login/verify-otp',
+        {
+          email,
+          otp,
+        }
+      );
+
+    const token =
+      response.data?.token;
 
     if (!token) {
       throw new Error(
-        'Login successful but no authentication token was returned.'
+        'Login OTP verified but no authentication token was returned.'
       );
     }
 
-    // Save token BEFORE requesting /auth/me
+    // Save JWT
     localStorage.setItem(
       'smartlease_token',
       token
     );
 
     try {
-      const meResponse = await api.get('/auth/me');
+      // Get logged-in user details
+      const meResponse =
+        await api.get('/auth/me');
 
       const currentUser =
         meResponse.data?.user ||
         meResponse.data;
 
-      if (!currentUser || !currentUser.role) {
+      if (
+        !currentUser ||
+        !currentUser.role
+      ) {
         throw new Error(
           'Login succeeded but user information could not be loaded.'
         );
@@ -157,15 +207,15 @@ export function AuthProvider({ children }) {
       setLoading(false);
 
       return currentUser;
-
     } catch (error) {
-      /*
-       * Login itself succeeded, but /auth/me failed.
-       * Remove token because we cannot safely establish
-       * the authenticated session.
-       */
-      localStorage.removeItem('smartlease_token');
-      localStorage.removeItem('smartlease_user');
+      // If /me fails, remove invalid token
+      localStorage.removeItem(
+        'smartlease_token'
+      );
+
+      localStorage.removeItem(
+        'smartlease_user'
+      );
 
       setUser(null);
 
@@ -173,9 +223,12 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // =====================================================
+  // ============================================================
   // REGISTER
-  // =====================================================
+  //
+  // Registration OTP verification is handled
+  // from Auth.jsx.
+  // ============================================================
 
   const register = async (
     name,
@@ -183,46 +236,63 @@ export function AuthProvider({ children }) {
     password,
     role = 'tenant'
   ) => {
-    const response = await api.post('/auth/register', {
-      name,
-      email,
-      password,
-      role,
-    });
+    const response =
+      await api.post(
+        '/auth/register',
+        {
+          name,
+          email,
+          password,
+          role,
+        }
+      );
 
     return response.data;
   };
 
-  // =====================================================
+  // ============================================================
   // LOGOUT
-  // =====================================================
+  // ============================================================
 
   const logout = () => {
-    localStorage.removeItem('smartlease_token');
-    localStorage.removeItem('smartlease_user');
+    localStorage.removeItem(
+      'smartlease_token'
+    );
+
+    localStorage.removeItem(
+      'smartlease_user'
+    );
 
     setUser(null);
   };
 
-  // =====================================================
+  // ============================================================
   // REFRESH USER
-  // =====================================================
+  // ============================================================
 
   const refreshUser = async () => {
     return await loadUser();
   };
 
-  // =====================================================
-  // AUTH STATE
-  // =====================================================
+  // ============================================================
+  // CONTEXT VALUE
+  // ============================================================
 
   const value = {
     user,
     loading,
+
+    // Login
     login,
+    verifyLoginOtp,
+
+    // Registration
     register,
+
+    // Other auth functions
     logout,
     refreshUser,
+
     isAuthenticated: !!user,
   };
 
@@ -233,9 +303,9 @@ export function AuthProvider({ children }) {
   );
 }
 
-// =====================================================
-// HOOK
-// =====================================================
+// ============================================================
+// CUSTOM HOOK
+// ============================================================
 
 export function useAuth() {
   return useContext(AuthContext);
