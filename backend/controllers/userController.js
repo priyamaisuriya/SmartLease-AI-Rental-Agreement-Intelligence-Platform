@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Property = require('../models/Property');
+const Agreement = require('../models/Agreement');
 
 
 // ============================================================
@@ -12,10 +14,55 @@ const getUsers = async (req, res) => {
 
     try {
 
-        const users = await User
-            .find()
-            .select('-password')
-            .sort({ createdAt: -1 });
+        const users = await User.aggregate([
+            {
+                $lookup: {
+                    from: 'properties',
+                    localField: '_id',
+                    foreignField: 'landlord',
+                    as: 'properties'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'agreements',
+                    let: { userId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        { $eq: ['$landlord', '$$userId'] },
+                                        { $eq: ['$tenant', '$$userId'] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'agreements'
+                }
+            },
+            {
+                $project: {
+                    password: 0
+                }
+            },
+            {
+                $addFields: {
+                    propertiesCount: { $size: '$properties' },
+                    agreementsCount: { $size: '$agreements' }
+                }
+            },
+            {
+                $project: {
+                    properties: 0,
+                    agreements: 0
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            }
+        ]);
 
         return res.json(users);
 

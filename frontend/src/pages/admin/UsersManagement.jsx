@@ -28,8 +28,8 @@ const UsersManagement = () => {
         phone: user.phone,
         role: user.role, // raw role for form
         displayRole: user.role.charAt(0).toUpperCase() + user.role.slice(1).replace('_', ' '),
-        properties: user.properties?.length || 0,
-        agreements: 0,
+        properties: user.propertiesCount || 0,
+        agreements: user.agreementsCount || 0,
         status: user.isActive ? 'Active' : 'Inactive',
         joined: new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       }));
