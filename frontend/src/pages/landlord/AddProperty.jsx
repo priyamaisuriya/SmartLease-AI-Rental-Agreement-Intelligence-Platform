@@ -378,7 +378,7 @@ const AddProperty = () => {
         return false;
       }
 
-      if (formData.propertyType !== 'land') {
+      if (['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType)) {
         if (
           formData.bedrooms === '' ||
           Number(formData.bedrooms) < 0 ||
@@ -509,7 +509,8 @@ const AddProperty = () => {
     formDataObj.append('city', formData.city.trim());
     formDataObj.append('state', formData.state.trim());
     formDataObj.append('pincode', formData.pincode.trim());
-    formDataObj.append('bedrooms', formData.propertyType === 'land' ? 0 : Number(formData.bedrooms || 0));
+    const isHousing = ['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType);
+    formDataObj.append('bedrooms', isHousing ? Number(formData.bedrooms || 0) : 0);
     formDataObj.append('area', Number(formData.area || 0));
     formDataObj.append('furnishing', formData.furnishing);
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
@@ -773,7 +774,7 @@ const AddProperty = () => {
                 </select>
               </div>
 
-              {formData.propertyType !== 'land' && (
+              {['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType) && (
               <div>
                 <label className="block text-sm font-medium text-ink mb-1">
                   BHK Configuration{' '}
