@@ -49,7 +49,11 @@ const createProperty = async (req, res) => {
             area,
             furnishing,
             monthlyRent,
-            securityDeposit
+            securityDeposit,
+            amenities,
+            availableFrom,
+            landmark,
+            customPropertyType
         } = req.body;
 
         if (
@@ -81,6 +85,10 @@ const createProperty = async (req, res) => {
             furnishing,
             monthlyRent,
             securityDeposit,
+            amenities: Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []),
+            availableFrom: availableFrom || null,
+            landmark,
+            customPropertyType,
             status: 'available'
         };
 
@@ -176,7 +184,11 @@ const getAvailableProperties = async (req, res) => {
         } = req.query;
 
         const filter = {
-            status: 'available'
+            status: 'available',
+            $or: [
+                { availableFrom: null },
+                { availableFrom: { $lte: new Date() } }
+            ]
         };
 
         if (city) {
@@ -304,7 +316,11 @@ const updateProperty = async (req, res) => {
             'area',
             'furnishing',
             'monthlyRent',
-            'securityDeposit'
+            'securityDeposit',
+            'amenities',
+            'availableFrom',
+            'landmark',
+            'customPropertyType'
         ];
 
         const changedFields = [];
@@ -312,10 +328,13 @@ const updateProperty = async (req, res) => {
         allowedFields.forEach((field) => {
 
             if (req.body[field] !== undefined) {
-
-                property[field] =
-                    req.body[field];
-
+                if (field === 'amenities') {
+                    property[field] = Array.isArray(req.body[field]) ? req.body[field] : (req.body[field] ? [req.body[field]] : []);
+                } else if (field === 'availableFrom' && !req.body[field]) {
+                    property[field] = null;
+                } else {
+                    property[field] = req.body[field];
+                }
                 changedFields.push(field);
             }
         });
