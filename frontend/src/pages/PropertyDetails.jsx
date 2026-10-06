@@ -519,6 +519,24 @@ const PropertyDetails = () => {
                 </div>
               )}
 
+              {/* Draft Agreement */}
+              {property.draftAgreement && (
+                <div className="border border-border rounded-lg p-4 mb-5 bg-paper flex items-center justify-between">
+                   <div>
+                      <p className="text-sm font-semibold text-ink">Draft Agreement</p>
+                      <p className="text-xs text-text-muted mt-1 truncate max-w-[150px]">{property.draftAgreement.originalFileName}</p>
+                   </div>
+                   <a 
+                     href={property.draftAgreement.fileUrl.startsWith('http') ? property.draftAgreement.fileUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${property.draftAgreement.fileUrl}`} 
+                     target="_blank" 
+                     rel="noreferrer"
+                     className="text-xs font-medium text-lease-600 hover:text-lease-700 underline"
+                   >
+                     View File
+                   </a>
+                </div>
+              )}
+
               {/* Book Button */}
               <button
                 onClick={handleBookProperty}
