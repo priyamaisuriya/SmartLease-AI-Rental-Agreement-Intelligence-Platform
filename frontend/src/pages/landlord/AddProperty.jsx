@@ -84,7 +84,6 @@ const AddProperty = () => {
     title: '',
     propertyType: 'apartment',
     bedrooms: '',
-    bathrooms: '',
     area: '',
     description: '',
 
@@ -160,9 +159,6 @@ const AddProperty = () => {
 
           bedrooms:
             property.bedrooms ?? '',
-
-          bathrooms:
-            property.bathrooms ?? '',
 
           area:
             property.area ?? '',
@@ -393,15 +389,6 @@ const AddProperty = () => {
           );
           return false;
         }
-
-        if (formData.bedrooms !== '1' && formData.bathrooms !== '') {
-          if (Number(formData.bathrooms) < 0 || Number(formData.bathrooms) > 20) {
-            setError(
-              'Please enter a valid bathroom count (0 to 20).'
-            );
-            return false;
-          }
-        }
       }
 
       if (
@@ -523,7 +510,6 @@ const AddProperty = () => {
     formDataObj.append('state', formData.state.trim());
     formDataObj.append('pincode', formData.pincode.trim());
     formDataObj.append('bedrooms', formData.propertyType === 'land' ? 0 : Number(formData.bedrooms || 0));
-    formDataObj.append('bathrooms', formData.propertyType === 'land' ? 0 : (formData.bedrooms === '1' ? 1 : Number(formData.bathrooms || 0)));
     formDataObj.append('area', Number(formData.area || 0));
     formDataObj.append('furnishing', formData.furnishing);
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
@@ -847,40 +833,18 @@ const AddProperty = () => {
                 <input
                   type="number"
                   min="0"
+                  max="1000000"
                   value={formData.area}
-                  onChange={(e) =>
-                    updateField(
-                      'area',
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.length <= 10) {
+                      updateField('area', val);
+                    }
+                  }}
                   placeholder="e.g. 1200"
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
                 />
               </div>
-
-              {formData.propertyType !== 'land' && formData.bedrooms !== '1' && (
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">
-                  Bathrooms
-                </label>
-
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={formData.bathrooms}
-                  onChange={(e) =>
-                    updateField(
-                      'bathrooms',
-                      e.target.value
-                    )
-                  }
-                  placeholder="e.g. 2"
-                  className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
-                />
-              </div>
-              )}
             </div>
 
             <div>
