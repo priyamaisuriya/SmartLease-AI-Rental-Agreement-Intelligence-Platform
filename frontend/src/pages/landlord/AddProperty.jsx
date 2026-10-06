@@ -40,10 +40,6 @@ const PROPERTY_TYPES = [
     label: 'Villa',
   },
   {
-    value: 'room',
-    label: 'Room',
-  },
-  {
     value: 'studio',
     label: 'Studio',
   },
@@ -83,6 +79,7 @@ const AddProperty = () => {
   const [formData, setFormData] = useState({
     title: '',
     propertyType: 'apartment',
+    customPropertyType: '',
     bedrooms: '',
     area: '',
     description: '',
@@ -156,6 +153,9 @@ const AddProperty = () => {
 
           propertyType:
             property.propertyType || 'apartment',
+
+          customPropertyType:
+            property.customPropertyType || '',
 
           bedrooms:
             property.bedrooms ?? '',
@@ -378,7 +378,14 @@ const AddProperty = () => {
         return false;
       }
 
-      if (['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType)) {
+      if (formData.propertyType === 'other') {
+        if (!formData.customPropertyType.trim() || formData.customPropertyType.length > 50) {
+          setError('Please enter a valid custom property type (max 50 characters).');
+          return false;
+        }
+      }
+
+      if (['apartment', 'house', 'villa'].includes(formData.propertyType)) {
         if (
           formData.bedrooms === '' ||
           Number(formData.bedrooms) < 0 ||
@@ -509,8 +516,11 @@ const AddProperty = () => {
     formDataObj.append('city', formData.city.trim());
     formDataObj.append('state', formData.state.trim());
     formDataObj.append('pincode', formData.pincode.trim());
-    const isHousing = ['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType);
+    const isHousing = ['apartment', 'house', 'villa'].includes(formData.propertyType);
     formDataObj.append('bedrooms', isHousing ? Number(formData.bedrooms || 0) : 0);
+    if (formData.propertyType === 'other') {
+      formDataObj.append('customPropertyType', formData.customPropertyType.trim());
+    }
     formDataObj.append('area', Number(formData.area || 0));
     formDataObj.append('furnishing', formData.furnishing);
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
@@ -774,7 +784,23 @@ const AddProperty = () => {
                 </select>
               </div>
 
-              {['apartment', 'house', 'villa', 'room', 'studio'].includes(formData.propertyType) && (
+              {formData.propertyType === 'other' && (
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Custom Property Type <span className="text-bad-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={50}
+                  value={formData.customPropertyType}
+                  onChange={(e) => updateField('customPropertyType', e.target.value)}
+                  placeholder="e.g. Warehouse"
+                  className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
+                />
+              </div>
+              )}
+
+              {['apartment', 'house', 'villa'].includes(formData.propertyType) && (
               <div>
                 <label className="block text-sm font-medium text-ink mb-1">
                   BHK Configuration{' '}
@@ -946,13 +972,12 @@ const AddProperty = () => {
 
                 <input
                   type="text"
+                  maxLength={6}
                   value={formData.pincode}
-                  onChange={(e) =>
-                    updateField(
-                      'pincode',
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 6) updateField('pincode', val);
+                  }}
                   placeholder="e.g. 395007"
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
@@ -1008,13 +1033,12 @@ const AddProperty = () => {
                 <input
                   type="number"
                   min="0"
+                  max="10000000"
                   value={formData.monthlyRent}
-                  onChange={(e) =>
-                    updateField(
-                      'monthlyRent',
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.length <= 8) updateField('monthlyRent', val);
+                  }}
                   placeholder="e.g. 45000"
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
@@ -1029,15 +1053,12 @@ const AddProperty = () => {
                 <input
                   type="number"
                   min="0"
-                  value={
-                    formData.securityDeposit
-                  }
-                  onChange={(e) =>
-                    updateField(
-                      'securityDeposit',
-                      e.target.value
-                    )
-                  }
+                  max="50000000"
+                  value={formData.securityDeposit}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.length <= 8) updateField('securityDeposit', val);
+                  }}
                   placeholder="e.g. 200000"
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
                 />
@@ -1053,6 +1074,7 @@ const AddProperty = () => {
 
                 <input
                   type="date"
+                  min={new Date().toISOString().split('T')[0]}
                   value={
                     formData.availableFrom
                   }
@@ -1112,39 +1134,47 @@ const AddProperty = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
 
-              {AMENITIES.map(
-                (amenity) => {
-                  const selected =
-                    formData.amenities.includes(
-                      amenity
-                    );
-
-                  return (
-                    <label
-                      key={amenity}
-                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selected
-                          ? 'border-lease-500 bg-lease-50'
-                          : 'border-border hover:bg-paper'
-                        }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() =>
-                          toggleAmenity(
-                            amenity
-                          )
-                        }
-                        className="w-4 h-4 text-lease-600 rounded border-border focus:ring-lease-500"
-                      />
-
-                      <span className="text-sm font-medium text-ink">
-                        {amenity}
-                      </span>
-                    </label>
-                  );
+              {(() => {
+                let amenitiesList = AMENITIES;
+                if (formData.propertyType === 'land') {
+                  amenitiesList = ['Water Supply', 'Security 24x7', 'Power Backup'];
+                } else if (['office', 'shop', 'other'].includes(formData.propertyType)) {
+                  amenitiesList = ['Parking', 'Security 24x7', 'Power Backup', 'Water Supply', 'Lift', 'Wi-Fi', 'AC'];
                 }
-              )}
+                return amenitiesList.map(
+                  (amenity) => {
+                    const selected =
+                      formData.amenities.includes(
+                        amenity
+                      );
+
+                    return (
+                      <label
+                        key={amenity}
+                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selected
+                            ? 'border-lease-500 bg-lease-50'
+                            : 'border-border hover:bg-paper'
+                          }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() =>
+                            toggleAmenity(
+                              amenity
+                            )
+                          }
+                          className="w-4 h-4 text-lease-600 rounded border-border focus:ring-lease-500"
+                        />
+
+                        <span className="text-sm font-medium text-ink">
+                          {amenity}
+                        </span>
+                      </label>
+                    );
+                  }
+                );
+              })()}
             </div>
 
             {formData.amenities.length >

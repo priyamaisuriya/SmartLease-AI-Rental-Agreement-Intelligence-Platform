@@ -6,6 +6,8 @@ import {
   Calendar,
   Home,
   User,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -16,6 +18,7 @@ const PropertyDetails = () => {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [booking, setBooking] = useState(false);
   const [bookingMessage, setBookingMessage] = useState('');
@@ -164,17 +167,17 @@ const PropertyDetails = () => {
     );
   }
 
-  // ============================================================
-  // IMAGE
-  // ============================================================
+  const nextImage = () => {
+    if (property.images && property.images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
+    }
+  };
 
-  const imageUrl =
-    property.images &&
-      property.images.length > 0
-      ? property.images[0].startsWith('http')
-        ? property.images[0]
-        : `http://localhost:5000${property.images[0]}`
-      : null;
+  const prevImage = () => {
+    if (property.images && property.images.length > 0) {
+      setCurrentImageIndex((prev) => (prev === 0 ? property.images.length - 1 : prev - 1));
+    }
+  };
 
   // ============================================================
   // PAGE
@@ -194,14 +197,47 @@ const PropertyDetails = () => {
         </button>
 
         {/* Property Image */}
-        <div className="bg-white rounded-2xl overflow-hidden mb-8">
-          <div className="h-[380px] bg-gray-100 flex items-center justify-center">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={property.title}
-                className="w-full h-full object-cover"
-              />
+        <div className="bg-white rounded-2xl overflow-hidden mb-8 relative group">
+          <div className="h-[380px] bg-gray-100 flex items-center justify-center relative">
+            {property.images && property.images.length > 0 ? (
+              <>
+                <img
+                  src={
+                    property.images[currentImageIndex].startsWith('http')
+                      ? property.images[currentImageIndex]
+                      : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${property.images[currentImageIndex]}`
+                  }
+                  alt={property.title}
+                  className="w-full h-full object-cover transition-all duration-300"
+                />
+                
+                {property.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 p-2 rounded-full bg-white/80 hover:bg-white shadow text-ink opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 p-2 rounded-full bg-white/80 hover:bg-white shadow text-ink opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {property.images.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
             ) : (
               <div className="text-center text-ink-muted">
                 <Home
@@ -280,7 +316,7 @@ const PropertyDetails = () => {
                   </p>
 
                   <p className="font-medium capitalize">
-                    {property.propertyType}
+                    {property.propertyType === 'other' ? property.customPropertyType : property.propertyType}
                   </p>
                 </div>
 

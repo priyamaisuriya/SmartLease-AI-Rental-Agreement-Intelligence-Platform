@@ -26,13 +26,19 @@ const PropertySchema = new mongoose.Schema(
                 'apartment',
                 'house',
                 'villa',
-                'room',
                 'studio',
                 'office',
                 'shop',
+                'land',
                 'other',
             ],
             required: true,
+        },
+
+        customPropertyType: {
+            type: String,
+            trim: true,
+            default: '',
         },
 
         // -----------------------------
