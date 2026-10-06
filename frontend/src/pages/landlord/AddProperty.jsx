@@ -56,6 +56,10 @@ const PROPERTY_TYPES = [
     label: 'Shop',
   },
   {
+    value: 'land',
+    label: 'Land',
+  },
+  {
     value: 'other',
     label: 'Other',
   },
@@ -364,9 +368,9 @@ const AddProperty = () => {
     setError('');
 
     if (step === 1) {
-      if (!formData.title.trim()) {
+      if (!formData.title.trim() || formData.title.length > 100) {
         setError(
-          'Please enter the property name.'
+          'Please enter a valid property name (max 100 characters).'
         );
         return false;
       }
@@ -378,22 +382,35 @@ const AddProperty = () => {
         return false;
       }
 
-      if (
-        formData.bedrooms === '' ||
-        Number(formData.bedrooms) < 0
-      ) {
-        setError(
-          'Please enter a valid bedroom count.'
-        );
-        return false;
+      if (formData.propertyType !== 'land') {
+        if (
+          formData.bedrooms === '' ||
+          Number(formData.bedrooms) < 0 ||
+          Number(formData.bedrooms) > 20
+        ) {
+          setError(
+            'Please enter a valid bedroom count (0 to 20).'
+          );
+          return false;
+        }
+
+        if (formData.bedrooms !== '1' && formData.bathrooms !== '') {
+          if (Number(formData.bathrooms) < 0 || Number(formData.bathrooms) > 20) {
+            setError(
+              'Please enter a valid bathroom count (0 to 20).'
+            );
+            return false;
+          }
+        }
       }
 
       if (
         formData.area === '' ||
-        Number(formData.area) <= 0
+        Number(formData.area) <= 0 ||
+        Number(formData.area) > 1000000
       ) {
         setError(
-          'Please enter the built-up area.'
+          'Please enter a valid built-up area (up to 1,000,000 sq.ft).'
         );
         return false;
       }
@@ -436,7 +453,8 @@ const AddProperty = () => {
     if (step === 3) {
       if (
         formData.monthlyRent === '' ||
-        Number(formData.monthlyRent) < 0
+        Number(formData.monthlyRent) <= 0 ||
+        Number(formData.monthlyRent) > 10000000
       ) {
         setError(
           'Please enter a valid monthly rent.'
@@ -446,7 +464,8 @@ const AddProperty = () => {
 
       if (
         formData.securityDeposit === '' ||
-        Number(formData.securityDeposit) < 0
+        Number(formData.securityDeposit) < 0 ||
+        Number(formData.securityDeposit) > 50000000
       ) {
         setError(
           'Please enter a valid security deposit.'
@@ -503,8 +522,8 @@ const AddProperty = () => {
     formDataObj.append('city', formData.city.trim());
     formDataObj.append('state', formData.state.trim());
     formDataObj.append('pincode', formData.pincode.trim());
-    formDataObj.append('bedrooms', Number(formData.bedrooms || 0));
-    formDataObj.append('bathrooms', Number(formData.bathrooms || 0));
+    formDataObj.append('bedrooms', formData.propertyType === 'land' ? 0 : Number(formData.bedrooms || 0));
+    formDataObj.append('bathrooms', formData.propertyType === 'land' ? 0 : (formData.bedrooms === '1' ? 1 : Number(formData.bathrooms || 0)));
     formDataObj.append('area', Number(formData.area || 0));
     formDataObj.append('furnishing', formData.furnishing);
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
@@ -768,6 +787,7 @@ const AddProperty = () => {
                 </select>
               </div>
 
+              {formData.propertyType !== 'land' && (
               <div>
                 <label className="block text-sm font-medium text-ink mb-1">
                   BHK Configuration{' '}
@@ -813,6 +833,7 @@ const AddProperty = () => {
                   </option>
                 </select>
               </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -838,6 +859,7 @@ const AddProperty = () => {
                 />
               </div>
 
+              {formData.propertyType !== 'land' && formData.bedrooms !== '1' && (
               <div>
                 <label className="block text-sm font-medium text-ink mb-1">
                   Bathrooms
@@ -846,6 +868,7 @@ const AddProperty = () => {
                 <input
                   type="number"
                   min="0"
+                  max="20"
                   value={formData.bathrooms}
                   onChange={(e) =>
                     updateField(
@@ -857,6 +880,7 @@ const AddProperty = () => {
                   className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500"
                 />
               </div>
+              )}
             </div>
 
             <div>
