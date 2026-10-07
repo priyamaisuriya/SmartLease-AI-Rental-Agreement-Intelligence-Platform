@@ -21,6 +21,8 @@ const propertyRoutes =
 
 const rentalRoutes =
   require('./routes/rentalRoutes');
+const paymentRoutes =
+  require('./routes/paymentRoutes');
 
 const agreementRoutes =
   require('./routes/agreementRoutes');
@@ -110,7 +112,10 @@ app.use(
   '/api/rentals',
   rentalRoutes
 );
-
+app.use(
+  '/api/payments',
+  paymentRoutes
+);
 app.use(
   '/api/agreements',
   agreementRoutes
