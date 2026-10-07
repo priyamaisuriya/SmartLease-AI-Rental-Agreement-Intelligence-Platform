@@ -57,6 +57,7 @@ import AuditLogs from './pages/admin/AuditLogs';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminProfile from './pages/admin/AdminProfile';
+import PermissionsManagement from './pages/admin/PermissionsManagement';
 
 // =====================================================
 // LANDLORD PAGES
@@ -273,6 +274,12 @@ function App() {
             <Route
               path="settings"
               element={<AdminSettings />}
+            />
+
+            {/* Permissions */}
+            <Route
+              path="permissions"
+              element={<PermissionsManagement />}
             />
 
           </Route>

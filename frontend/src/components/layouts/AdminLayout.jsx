@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, Users, Building, FileText, Inbox, BarChart, ShieldAlert, Activity, FileBarChart, Settings, Bell, MessageSquare, Search } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Building, FileText, Inbox, BarChart, ShieldAlert, Activity, FileBarChart, Settings, Bell, MessageSquare, Search, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 
 const NAV_ITEMS = [
-  { id: '/admin', label: 'Dashboard', icon: LayoutDashboard, section: 'Main' },
-  { id: '/admin/users', label: 'Users', icon: Users, section: 'Management' },
-  { id: '/admin/properties', label: 'Properties', icon: Building, section: 'Management' },
-  { id: '/admin/rental-requests', label: 'Rental Requests', icon: Inbox, section: 'Management' },
-  { id: '/admin/agreements', label: 'Agreements', icon: FileText, section: 'Management' },
-  { id: '/admin/ai-usage', label: 'AI Usage', icon: Activity, section: 'AI & Reports' },
-  { id: '/admin/reports', label: 'Reports', icon: BarChart, section: 'AI & Reports' },
-  { id: '/admin/feedback', label: 'Feedback', icon: MessageSquare, section: 'AI & Reports' },
-  { id: '/admin/audit-logs', label: 'Audit Logs', icon: ShieldAlert, section: 'System' },
-  { id: '/admin/notifications', label: 'Notifications', icon: Bell, badge: '2', section: 'System' },
-  { id: '/admin/profile', label: 'Profile', icon: Users, section: 'Account' },
-  { id: '/admin/settings', label: 'Settings', icon: Settings, section: 'Account' },
+  { id: '/admin', label: 'Dashboard', icon: LayoutDashboard, section: 'Main', permission: 'dashboard' },
+  { id: '/admin/users', label: 'Users', icon: Users, section: 'Management', permission: 'tenant-management' }, // using tenant-management as a proxy for user management
+  { id: '/admin/properties', label: 'Properties', icon: Building, section: 'Management', permission: 'property-view' },
+  { id: '/admin/rental-requests', label: 'Rental Requests', icon: Inbox, section: 'Management', permission: 'rental-view' },
+  { id: '/admin/agreements', label: 'Agreements', icon: FileText, section: 'Management', permission: 'agreement-view' },
+  { id: '/admin/ai-usage', label: 'AI Usage', icon: Activity, section: 'AI & Reports', permission: 'reports' },
+  { id: '/admin/reports', label: 'Reports', icon: BarChart, section: 'AI & Reports', permission: 'reports' },
+  { id: '/admin/feedback', label: 'Feedback', icon: MessageSquare, section: 'AI & Reports', permission: 'feedback' },
+  { id: '/admin/audit-logs', label: 'Audit Logs', icon: ShieldAlert, section: 'System', permission: 'settings' },
+  { id: '/admin/permissions', label: 'Permissions', icon: Shield, section: 'System', permission: 'permission-management' },
+  { id: '/admin/notifications', label: 'Notifications', icon: Bell, badge: '2', section: 'System', permission: null },
+  { id: '/admin/profile', label: 'Profile', icon: Users, section: 'Account', permission: 'profile' },
+  { id: '/admin/settings', label: 'Settings', icon: Settings, section: 'Account', permission: 'settings' },
 ];
 
 const AdminLayout = () => {
@@ -40,6 +42,23 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const { user, logout } = useAuth();
+  
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const res = await api.get('/permissions/my-role');
+        setUserPermissions(res.data.permissions || []);
+      } catch (err) {
+        console.error('Failed to fetch permissions', err);
+      } finally {
+        setPermissionsLoading(false);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   const getInitial = () => {
     if (user?.name) {
@@ -51,12 +70,19 @@ const AdminLayout = () => {
     return 'AD';
   };
 
-  // Group nav items by section for the sidebar
-  const sections = Array.from(new Set(NAV_ITEMS.map(item => item.section)));
+  // Filter NAV_ITEMS based on permissions
+  const filteredNavItems = NAV_ITEMS.filter(item => {
+    if (!item.permission) return true; // Items without specific permission requirement
+    if (user?.role === 'admin') return true; // Admin gets everything
+    return userPermissions.includes(item.permission);
+  });
 
-  const currentItem = NAV_ITEMS.find(item => location.pathname === item.id || location.pathname.startsWith(item.id + '/')) || NAV_ITEMS[0];
-  const pageTitle = currentItem.label;
-  const eyebrow = currentItem.section;
+  // Group nav items by section for the sidebar
+  const sections = Array.from(new Set(filteredNavItems.map(item => item.section)));
+
+  const currentItem = filteredNavItems.find(item => location.pathname === item.id || location.pathname.startsWith(item.id + '/')) || filteredNavItems[0];
+  const pageTitle = currentItem?.label || 'Admin';
+  const eyebrow = currentItem?.section || '';
 
   const handleLogout = () => {
     logout();
@@ -84,7 +110,7 @@ const AdminLayout = () => {
                 {section}
               </div>
               <div className="space-y-[2px]">
-                {NAV_ITEMS.filter(item => item.section === section).map(item => (
+                {filteredNavItems.filter(item => item.section === section).map(item => (
                   <NavLink key={item.id} to={item.id} end={item.id === '/admin'} className={({ isActive }) => `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive ? 'bg-gold/12 text-gold-soft font-semibold' : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'}`}>
                     <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.6} />
                     {item.label}
@@ -141,7 +167,7 @@ const AdminLayout = () => {
                 {section}
               </div>
               <div className="space-y-[2px]">
-                {NAV_ITEMS.filter(item => item.section === section).map(item => (
+                {filteredNavItems.filter(item => item.section === section).map(item => (
                   <NavLink key={item.id} to={item.id} end={item.id === '/admin'} onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive ? 'bg-gold/12 text-gold-soft font-semibold' : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'}`}>
                     <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.6} />
                     {item.label}
