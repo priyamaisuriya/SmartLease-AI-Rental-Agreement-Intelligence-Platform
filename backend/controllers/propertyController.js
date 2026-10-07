@@ -57,20 +57,45 @@ const createProperty = async (req, res) => {
             customPropertyType
         } = req.body;
 
-        if (!title || !propertyType || !address || !city || !state || monthlyRent === undefined) {
-            return res.status(400).json({ message: 'Title, property type, address, city, state and monthly rent are required' });
-        }
 
-        if (!req.files || !req.files.draftAgreement) {
-            return res.status(400).json({ message: 'A draft agreement document is required to list a property.' });
-        }
+        // --------------------------------------------------------
+        // REQUIRED FIELD VALIDATION
+        // --------------------------------------------------------
 
         if (
+            !title ||
+            !propertyType ||
+            !address ||
+            !city ||
+            !state ||
+            monthlyRent === undefined
+        ) {
             return res.status(400).json({
                 message:
                     'Title, property type, address, city, state and monthly rent are required'
             });
         }
+
+
+        // --------------------------------------------------------
+        // DRAFT AGREEMENT VALIDATION
+        // --------------------------------------------------------
+
+        if (
+            !req.files ||
+            !req.files.draftAgreement ||
+            req.files.draftAgreement.length === 0
+        ) {
+            return res.status(400).json({
+                message:
+                    'A draft agreement document is required to list a property.'
+            });
+        }
+
+
+        // --------------------------------------------------------
+        // PROPERTY DATA
+        // --------------------------------------------------------
 
         const propertyData = {
             landlord: req.user.id,
@@ -87,67 +112,155 @@ const createProperty = async (req, res) => {
             furnishing,
             monthlyRent,
             securityDeposit,
-            amenities: Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []),
+
+            amenities: Array.isArray(amenities)
+                ? amenities
+                : (amenities ? [amenities] : []),
+
             availableFrom: availableFrom || null,
             landmark,
             customPropertyType,
+
             status: 'available'
         };
 
-        if (req.files && req.files.length > 0) {
-            propertyData.images = req.files.map(file => `/uploads/properties/${file.filename}`);
+
+        // --------------------------------------------------------
+        // PROPERTY IMAGES
+        // --------------------------------------------------------
+
+        if (req.files && req.files.images) {
+
+            propertyData.images = req.files.images.map(
+                file => `/uploads/properties/${file.filename}`
+            );
+
+        } else {
+
+            propertyData.images = [];
+
         }
 
+
+        // --------------------------------------------------------
+        // CREATE PROPERTY
+        // --------------------------------------------------------
+
         const property = await Property.create(propertyData);
-        
-        // Create Draft Agreement
+
+
+        // --------------------------------------------------------
+        // CREATE DRAFT AGREEMENT
+        // --------------------------------------------------------
+
         const draftFile = req.files.draftAgreement[0];
+
         let fileType = 'pdf';
-        if (draftFile.originalname.endsWith('.doc')) fileType = 'doc';
-        if (draftFile.originalname.endsWith('.docx')) fileType = 'docx';
+
+        const originalName =
+            draftFile.originalname.toLowerCase();
+
+        if (originalName.endsWith('.doc')) {
+            fileType = 'doc';
+        }
+
+        if (originalName.endsWith('.docx')) {
+            fileType = 'docx';
+        }
+
 
         const draftAgreement = await Agreement.create({
+
             property: property._id,
+
             landlord: req.user.id,
+
             title: `Draft Agreement - ${property.title}`,
-            originalFileName: draftFile.originalname,
-            fileUrl: `/uploads/properties/${draftFile.filename}`,
-            fileType: fileType,
+
+            originalFileName:
+                draftFile.originalname,
+
+            fileUrl:
+                `/uploads/properties/${draftFile.filename}`,
+
+            fileType,
+
             status: 'draft'
+
         });
 
-        property.draftAgreement = draftAgreement._id;
+
+        // --------------------------------------------------------
+        // LINK AGREEMENT TO PROPERTY
+        // --------------------------------------------------------
+
+        property.draftAgreement =
+            draftAgreement._id;
+
         await property.save();
 
 
+        // --------------------------------------------------------
+        // ACTIVITY LOG
+        // --------------------------------------------------------
+
         await createActivityLog({
+
             userId: req.user.id,
+
             action: 'PROPERTY_CREATED',
+
             module: 'PROPERTY',
+
             description:
                 `Property "${property.title}" was created`,
+
             targetType: 'Property',
+
             targetId: property._id,
+
             metadata: {
-                propertyType: property.propertyType,
-                city: property.city,
-                state: property.state,
-                monthlyRent: property.monthlyRent
+
+                propertyType:
+                    property.propertyType,
+
+                city:
+                    property.city,
+
+                state:
+                    property.state,
+
+                monthlyRent:
+                    property.monthlyRent
+
             },
+
             req,
+
             status: 'success'
+
         });
 
+
+        // --------------------------------------------------------
+        // RESPONSE
+        // --------------------------------------------------------
+
         return res.status(201).json({
-            message: 'Property created successfully',
+
+            message:
+                'Property created successfully',
+
             property
+
         });
+
 
     } catch (err) {
 
         console.error(
             'Create property error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -159,27 +272,44 @@ const createProperty = async (req, res) => {
 
 // ============================================================
 // GET MY PROPERTIES
+// GET /api/properties/my-properties
 // ============================================================
 
 const getMyProperties = async (req, res) => {
+
     try {
 
-        const properties = await Property.find({
-            landlord: req.user.id
-        })
-            .sort({ createdAt: -1 })
-            .populate('landlord', 'name email phone').populate('draftAgreement');
+        const properties =
+            await Property.find({
+                landlord: req.user.id
+            })
+                .sort({
+                    createdAt: -1
+                })
+                .populate(
+                    'landlord',
+                    'name email phone'
+                )
+                .populate(
+                    'draftAgreement'
+                );
+
 
         return res.json({
-            count: properties.length,
+
+            count:
+                properties.length,
+
             properties
+
         });
+
 
     } catch (err) {
 
         console.error(
             'Get my properties error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -191,9 +321,11 @@ const getMyProperties = async (req, res) => {
 
 // ============================================================
 // GET AVAILABLE PROPERTIES
+// GET /api/properties/available
 // ============================================================
 
 const getAvailableProperties = async (req, res) => {
+
     try {
 
         const {
@@ -205,59 +337,133 @@ const getAvailableProperties = async (req, res) => {
             maxRent
         } = req.query;
 
+
         const filter = {
+
             status: 'available',
+
             $or: [
-                { availableFrom: null },
-                { availableFrom: { $lte: new Date() } }
+
+                {
+                    availableFrom: null
+                },
+
+                {
+                    availableFrom: {
+                        $lte: new Date()
+                    }
+                }
+
             ]
+
         };
 
+
+        // --------------------------------------------------------
+        // CITY
+        // --------------------------------------------------------
+
         if (city) {
-            filter.city = new RegExp(city, 'i');
+
+            filter.city =
+                new RegExp(city, 'i');
+
         }
+
+
+        // --------------------------------------------------------
+        // STATE
+        // --------------------------------------------------------
 
         if (state) {
-            filter.state = new RegExp(state, 'i');
+
+            filter.state =
+                new RegExp(state, 'i');
+
         }
+
+
+        // --------------------------------------------------------
+        // PROPERTY TYPE
+        // --------------------------------------------------------
 
         if (propertyType) {
-            filter.propertyType = propertyType;
+
+            filter.propertyType =
+                propertyType;
+
         }
 
+
+        // --------------------------------------------------------
+        // FURNISHING
+        // --------------------------------------------------------
+
         if (furnishing) {
-            filter.furnishing = furnishing;
+
+            filter.furnishing =
+                furnishing;
+
         }
+
+
+        // --------------------------------------------------------
+        // RENT RANGE
+        // --------------------------------------------------------
 
         if (minRent || maxRent) {
 
             filter.monthlyRent = {};
 
             if (minRent) {
+
                 filter.monthlyRent.$gte =
                     Number(minRent);
+
             }
 
             if (maxRent) {
+
                 filter.monthlyRent.$lte =
                     Number(maxRent);
+
             }
+
         }
 
-        const properties = await Property.find(filter)
-            .sort({ createdAt: -1 })
-            .populate('landlord', 'name phone').populate('draftAgreement');
+
+        const properties =
+            await Property.find(filter)
+
+                .sort({
+                    createdAt: -1
+                })
+
+                .populate(
+                    'landlord',
+                    'name phone'
+                )
+
+                .populate(
+                    'draftAgreement'
+                );
+
 
         return res.json({
-            count: properties.length,
+
+            count:
+                properties.length,
+
             properties
+
         });
+
 
     } catch (err) {
 
         console.error(
             'Get available properties error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -269,27 +475,45 @@ const getAvailableProperties = async (req, res) => {
 
 // ============================================================
 // GET PROPERTY BY ID
+// GET /api/properties/:id
 // ============================================================
 
 const getPropertyById = async (req, res) => {
+
     try {
 
-        const property = await Property.findById(req.params.id)
-            .populate('landlord', 'name email phone').populate('draftAgreement');
+        const property =
+            await Property.findById(
+                req.params.id
+            )
+
+                .populate(
+                    'landlord',
+                    'name email phone'
+                )
+
+                .populate(
+                    'draftAgreement'
+                );
+
 
         if (!property) {
+
             return res.status(404).json({
                 message: 'Property not found'
             });
+
         }
 
+
         return res.json(property);
+
 
     } catch (err) {
 
         console.error(
             'Get property by ID error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -301,31 +525,51 @@ const getPropertyById = async (req, res) => {
 
 // ============================================================
 // UPDATE PROPERTY
+// PUT /api/properties/:id
 // ============================================================
 
 const updateProperty = async (req, res) => {
+
     try {
 
         const property =
-            await Property.findById(req.params.id);
+            await Property.findById(
+                req.params.id
+            );
+
 
         if (!property) {
+
             return res.status(404).json({
                 message: 'Property not found'
             });
+
         }
+
+
+        // --------------------------------------------------------
+        // OWNERSHIP CHECK
+        // --------------------------------------------------------
 
         if (
             property.landlord.toString() !==
             req.user.id
         ) {
+
             return res.status(403).json({
                 message:
                     'You can only update your own property'
             });
+
         }
 
+
+        // --------------------------------------------------------
+        // ALLOWED FIELDS
+        // --------------------------------------------------------
+
         const allowedFields = [
+
             'title',
             'description',
             'propertyType',
@@ -343,70 +587,203 @@ const updateProperty = async (req, res) => {
             'availableFrom',
             'landmark',
             'customPropertyType'
+
         ];
+
 
         const changedFields = [];
 
-        allowedFields.forEach((field) => {
+
+        // --------------------------------------------------------
+        // UPDATE BASIC FIELDS
+        // --------------------------------------------------------
+
+        allowedFields.forEach(field => {
 
             if (req.body[field] !== undefined) {
+
                 if (field === 'amenities') {
-                    property[field] = Array.isArray(req.body[field]) ? req.body[field] : (req.body[field] ? [req.body[field]] : []);
-                } else if (field === 'availableFrom' && !req.body[field]) {
+
+                    property[field] =
+                        Array.isArray(req.body[field])
+                            ? req.body[field]
+                            : (
+                                req.body[field]
+                                    ? [req.body[field]]
+                                    : []
+                            );
+
+                } else if (
+                    field === 'availableFrom' &&
+                    !req.body[field]
+                ) {
+
                     property[field] = null;
+
                 } else {
-                    property[field] = req.body[field];
+
+                    property[field] =
+                        req.body[field];
+
                 }
+
+
                 changedFields.push(field);
+
             }
+
         });
 
-        let updatedImages = [];
-        if (req.body.images) {
-            if (Array.isArray(req.body.images)) {
-                updatedImages = req.body.images;
-            } else if (typeof req.body.images === 'string') {
-                updatedImages = [req.body.images];
+
+        // --------------------------------------------------------
+        // UPDATE IMAGES
+        // --------------------------------------------------------
+
+        let updatedImages =
+            property.images || [];
+
+
+        // Existing images sent by frontend
+        if (req.body.images !== undefined) {
+
+            if (
+                Array.isArray(
+                    req.body.images
+                )
+            ) {
+
+                updatedImages =
+                    req.body.images;
+
+            } else if (
+                typeof req.body.images === 'string'
+            ) {
+
+                try {
+
+                    const parsedImages =
+                        JSON.parse(
+                            req.body.images
+                        );
+
+                    if (
+                        Array.isArray(parsedImages)
+                    ) {
+
+                        updatedImages =
+                            parsedImages;
+
+                    } else {
+
+                        updatedImages = [
+                            req.body.images
+                        ];
+
+                    }
+
+                } catch {
+
+                    updatedImages = [
+                        req.body.images
+                    ];
+
+                }
+
             }
-        }
-        
-        if (req.files && req.files.length > 0) {
-            const newImages = req.files.map(file => `/uploads/properties/${file.filename}`);
-            updatedImages = [...updatedImages, ...newImages];
+
         }
 
-        if (req.body.images !== undefined || (req.files && req.files.images)) {
-             property.images = updatedImages;
-             if (!changedFields.includes('images')) changedFields.push('images');
+
+        // New uploaded images
+        if (
+            req.files &&
+            req.files.images
+        ) {
+
+            const newImages =
+                req.files.images.map(
+                    file =>
+                        `/uploads/properties/${file.filename}`
+                );
+
+
+            updatedImages = [
+                ...updatedImages,
+                ...newImages
+            ];
+
         }
+
+
+        if (
+            req.body.images !== undefined ||
+            (
+                req.files &&
+                req.files.images &&
+                req.files.images.length > 0
+            )
+        ) {
+
+            property.images =
+                updatedImages;
+
+            changedFields.push('images');
+
+        }
+
+
+        // --------------------------------------------------------
+        // SAVE PROPERTY
+        // --------------------------------------------------------
 
         await property.save();
 
+
+        // --------------------------------------------------------
+        // ACTIVITY LOG
+        // --------------------------------------------------------
+
         await createActivityLog({
+
             userId: req.user.id,
+
             action: 'PROPERTY_UPDATED',
+
             module: 'PROPERTY',
+
             description:
                 `Property "${property.title}" was updated`,
+
             targetType: 'Property',
+
             targetId: property._id,
+
             metadata: {
                 changedFields
             },
+
             req,
+
             status: 'success'
+
         });
 
+
         return res.json({
-            message: 'Property updated successfully',
+
+            message:
+                'Property updated successfully',
+
             property
+
         });
+
 
     } catch (err) {
 
         console.error(
             'Update property error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -418,68 +795,128 @@ const updateProperty = async (req, res) => {
 
 // ============================================================
 // DELETE / DEACTIVATE PROPERTY
+// DELETE /api/properties/:id
 // ============================================================
 
 const deleteProperty = async (req, res) => {
+
     try {
 
         const property =
-            await Property.findById(req.params.id);
+            await Property.findById(
+                req.params.id
+            );
+
 
         if (!property) {
+
             return res.status(404).json({
                 message: 'Property not found'
             });
+
         }
+
+
+        // --------------------------------------------------------
+        // OWNERSHIP CHECK
+        // --------------------------------------------------------
 
         if (
             property.landlord.toString() !==
             req.user.id
         ) {
+
             return res.status(403).json({
+
                 message:
                     'You can only remove your own property'
+
             });
+
         }
 
-        if (property.status === 'rented') {
+
+        // --------------------------------------------------------
+        // RENTED PROPERTY CHECK
+        // --------------------------------------------------------
+
+        if (
+            property.status === 'rented'
+        ) {
+
             return res.status(400).json({
+
                 message:
                     'A rented property cannot be removed'
+
             });
+
         }
 
-        property.status = 'inactive';
+
+        property.status =
+            'inactive';
+
 
         await property.save();
 
+
+        // --------------------------------------------------------
+        // ACTIVITY LOG
+        // --------------------------------------------------------
+
         await createActivityLog({
+
             userId: req.user.id,
-            action: 'PROPERTY_DEACTIVATED',
-            module: 'PROPERTY',
+
+            action:
+                'PROPERTY_DEACTIVATED',
+
+            module:
+                'PROPERTY',
+
             description:
                 `Property "${property.title}" was deactivated`,
-            targetType: 'Property',
-            targetId: property._id,
+
+            targetType:
+                'Property',
+
+            targetId:
+                property._id,
+
             metadata: {
-                previousStatus: 'available',
-                newStatus: 'inactive'
+
+                previousStatus:
+                    'available',
+
+                newStatus:
+                    'inactive'
+
             },
+
             req,
-            status: 'success'
+
+            status:
+                'success'
+
         });
 
+
         return res.json({
+
             message:
                 'Property deactivated successfully',
+
             property
+
         });
+
 
     } catch (err) {
 
         console.error(
             'Delete property error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -489,14 +926,198 @@ const deleteProperty = async (req, res) => {
 };
 
 
-module.exports = {
-    createProperty,
-    getMyProperties,
-    getAvailableProperties,
-    getPropertyById,
-    updateProperty,
-    deleteProperty
+// ============================================================
+// UPDATE PROPERTY STATUS
+// PATCH /api/properties/:id/status
+// ============================================================
+
+const updatePropertyStatus = async (req, res) => {
+
+    try {
+
+        const property =
+            await Property.findById(
+                req.params.id
+            );
+
+
+        if (!property) {
+
+            return res.status(404).json({
+
+                message:
+                    'Property not found'
+
+            });
+
+        }
+
+
+        // --------------------------------------------------------
+        // OWNERSHIP CHECK
+        // --------------------------------------------------------
+
+        if (
+            property.landlord.toString() !==
+            req.user.id
+        ) {
+
+            return res.status(403).json({
+
+                message:
+                    'Unauthorized'
+
+            });
+
+        }
+
+
+        // --------------------------------------------------------
+        // RENTED PROPERTY CHECK
+        // --------------------------------------------------------
+
+        if (
+            property.status === 'rented'
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    'Rented properties cannot be modified this way'
+
+            });
+
+        }
+
+
+        const newStatus =
+            req.body.status;
+
+
+        // --------------------------------------------------------
+        // VALID STATUS
+        // --------------------------------------------------------
+
+        const allowedStatuses = [
+            'available',
+            'inactive',
+            'rented'
+        ];
+
+
+        if (
+            !allowedStatuses.includes(
+                newStatus
+            )
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    'Invalid property status'
+
+            });
+
+        }
+
+
+        const previousStatus =
+            property.status;
+
+
+        property.status =
+            newStatus;
+
+
+        await property.save();
+
+
+        // --------------------------------------------------------
+        // ACTIVITY LOG
+        // --------------------------------------------------------
+
+        await createActivityLog({
+
+            userId: req.user.id,
+
+            action:
+                'PROPERTY_STATUS_UPDATED',
+
+            module:
+                'PROPERTY',
+
+            description:
+                `Property "${property.title}" status changed from ${previousStatus} to ${newStatus}`,
+
+            targetType:
+                'Property',
+
+            targetId:
+                property._id,
+
+            metadata: {
+
+                previousStatus,
+
+                newStatus
+
+            },
+
+            req,
+
+            status:
+                'success'
+
+        });
+
+
+        return res.json({
+
+            message:
+                'Property status updated successfully',
+
+            property
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            'Update property status error:',
+            err
+        );
+
+        return res.status(500).json({
+
+            message:
+                'Server error'
+
+        });
+
+    }
+
 };
 
-const updatePropertyStatus = async (req, res) => { try { const property = await Property.findById(req.params.id); if (!property) return res.status(404).json({ message: 'Property not found' }); if (property.landlord.toString() !== req.user.id) return res.status(403).json({ message: 'Unauthorized' }); if (property.status === 'rented') return res.status(400).json({ message: 'Rented properties cannot be modified this way' }); property.status = req.body.status || 'available'; await property.save(); return res.json({ message: 'Status updated', property }); } catch (err) { res.status(500).json({ message: 'Server error' }); } };
-module.exports.updatePropertyStatus = updatePropertyStatus;
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+module.exports = {
+
+    createProperty,
+
+    getMyProperties,
+
+    getAvailableProperties,
+
+    getPropertyById,
+
+    updateProperty,
+
+    deleteProperty,
+
+    updatePropertyStatus
+
+};
