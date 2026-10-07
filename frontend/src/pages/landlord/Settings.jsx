@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Save } from 'lucide-react';
+import { CheckCircle2, Save, Loader2 } from 'lucide-react';
+import api from '../../services/api';
 
 const NOTIFICATION_SETTINGS_KEY =
   'smartlease_landlord_notification_settings';
@@ -33,6 +34,9 @@ const Settings = () => {
     currentPassword: '',
     newPassword: '',
   });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     setSaved(false);
@@ -56,6 +60,31 @@ const Settings = () => {
     setTimeout(() => {
       setSaved(false);
     }, 3000);
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!security.currentPassword || !security.newPassword) {
+      setPasswordError('Please fill in both password fields.');
+      return;
+    }
+    
+    try {
+      setPasswordLoading(true);
+      setPasswordError('');
+      setPasswordSuccess('');
+      
+      const res = await api.put('/auth/change-password', security);
+      
+      setPasswordSuccess(res.data.message || 'Password updated successfully.');
+      setSecurity({ currentPassword: '', newPassword: '' });
+      
+      setTimeout(() => setPasswordSuccess(''), 4000);
+    } catch (err) {
+      setPasswordError(err.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -181,13 +210,22 @@ const Settings = () => {
               </h3>
 
               <p className="text-xs text-text-faint mt-1">
-                Password changes will be available when the
-                backend password-management API is implemented.
+                Update your account password securely.
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            {passwordError && (
+              <div className="bg-bad-50 border border-bad-200 text-bad-700 text-sm rounded-lg p-3">
+                {passwordError}
+              </div>
+            )}
+            {passwordSuccess && (
+              <div className="bg-good-50 border border-good-200 text-good-700 text-sm rounded-lg p-3 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {passwordSuccess}
+              </div>
+            )}
 
             {/* CURRENT PASSWORD */}
             <div>
@@ -197,6 +235,7 @@ const Settings = () => {
 
               <input
                 type="password"
+                required
                 value={security.currentPassword}
                 onChange={(e) =>
                   setSecurity((current) => ({
@@ -205,8 +244,7 @@ const Settings = () => {
                   }))
                 }
                 placeholder="••••••••"
-                disabled
-                className="w-full max-w-md px-3 py-2 bg-paper border border-border rounded-lg text-sm opacity-60 cursor-not-allowed"
+                className="w-full max-w-md px-3 py-2 bg-paper border border-border rounded-lg text-sm focus:outline-none focus:border-lease-500"
               />
             </div>
 
@@ -218,6 +256,7 @@ const Settings = () => {
 
               <input
                 type="password"
+                required
                 value={security.newPassword}
                 onChange={(e) =>
                   setSecurity((current) => ({
@@ -225,19 +264,20 @@ const Settings = () => {
                     newPassword: e.target.value,
                   }))
                 }
-                placeholder="••••••••"
-                disabled
-                className="w-full max-w-md px-3 py-2 bg-paper border border-border rounded-lg text-sm opacity-60 cursor-not-allowed"
+                placeholder="•••••••• (min 8 characters)"
+                className="w-full max-w-md px-3 py-2 bg-paper border border-border rounded-lg text-sm focus:outline-none focus:border-lease-500"
               />
             </div>
-
-            <p className="text-xs text-text-faint">
-              Password management is currently disabled because
-              there is no password-change endpoint in the SmartLease
-              backend yet.
-            </p>
-
-          </div>
+            
+            <button
+              type="submit"
+              disabled={passwordLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-ink text-white rounded-lg text-sm font-medium hover:bg-ink-dark transition-colors disabled:opacity-70"
+            >
+              {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Update Password</span>
+            </button>
+          </form>
         </div>
 
       </div>
