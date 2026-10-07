@@ -35,14 +35,16 @@ const RentalSchema = new mongoose.Schema(
 
         monthlyRent: {
             type: Number,
-            required: true,
-            min: 0,
+            required: [true, 'Monthly rent is required'],
+            min: [1, 'Monthly rent must be greater than 0'],
+            max: [10000000, 'Monthly rent cannot exceed 10,000,000']
         },
 
         securityDeposit: {
             type: Number,
             default: 0,
-            min: 0,
+            min: [0, 'Security deposit cannot be negative'],
+            max: [50000000, 'Security deposit cannot exceed 50,000,000'],
         },
 
         status: {

@@ -366,9 +366,9 @@ const AddProperty = () => {
     setError('');
 
     if (step === 1) {
-      if (!formData.title.trim() || formData.title.length > 100) {
+      if (!formData.title.trim() || formData.title.length < 5 || formData.title.length > 100) {
         setError(
-          'Please enter a valid property name (max 100 characters).'
+          'Please enter a valid property name (5 to 100 characters).'
         );
         return false;
       }
@@ -415,30 +415,30 @@ const AddProperty = () => {
     }
 
     if (step === 2) {
-      if (!formData.address.trim()) {
+      if (!formData.address.trim() || formData.address.length < 5 || formData.address.length > 200) {
         setError(
-          'Please enter the full address.'
+          'Please enter a valid address (5 to 200 characters).'
         );
         return false;
       }
 
-      if (!formData.city.trim()) {
+      if (!formData.city.trim() || formData.city.length > 50) {
         setError(
-          'Please enter the city.'
+          'Please enter a valid city (max 50 characters).'
         );
         return false;
       }
 
-      if (!formData.state.trim()) {
+      if (!formData.state.trim() || formData.state.length > 50) {
         setError(
-          'Please enter the state.'
+          'Please enter a valid state (max 50 characters).'
         );
         return false;
       }
 
-      if (!formData.pincode.trim()) {
+      if (!/^\d{6}$/.test(formData.pincode.trim())) {
         setError(
-          'Please enter the pincode.'
+          'Please enter a valid 6-digit pincode.'
         );
         return false;
       }
@@ -453,7 +453,7 @@ const AddProperty = () => {
         Number(formData.monthlyRent) > 10000000
       ) {
         setError(
-          'Please enter a valid monthly rent.'
+          'Please enter a valid monthly rent (1 to 10,000,000).'
         );
         return false;
       }
@@ -464,7 +464,7 @@ const AddProperty = () => {
         Number(formData.securityDeposit) > 50000000
       ) {
         setError(
-          'Please enter a valid security deposit.'
+          'Please enter a valid security deposit (0 to 50,000,000).'
         );
         return false;
       }
@@ -477,6 +477,17 @@ const AddProperty = () => {
       }
 
       return true;
+    }
+
+    if (step === 4) {
+      if (formData.description && formData.description.length > 2000) {
+         setError('Description cannot exceed 2000 characters.');
+         return false;
+      }
+      if (formData.conditions && formData.conditions.length > 5000) {
+         setError('Conditions cannot exceed 5000 characters.');
+         return false;
+      }
     }
 
     return true;

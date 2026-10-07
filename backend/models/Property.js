@@ -10,14 +10,17 @@ const PropertySchema = new mongoose.Schema(
 
         title: {
             type: String,
-            required: true,
+            required: [true, 'Property title is required'],
             trim: true,
+            minlength: [5, 'Title must be at least 5 characters'],
+            maxlength: [100, 'Title cannot exceed 100 characters']
         },
 
         description: {
             type: String,
             trim: true,
             default: '',
+            maxlength: [2000, 'Description cannot exceed 2000 characters']
         },
 
         propertyType: {
@@ -47,32 +50,38 @@ const PropertySchema = new mongoose.Schema(
 
         address: {
             type: String,
-            required: true,
+            required: [true, 'Address is required'],
             trim: true,
+            minlength: [5, 'Address must be at least 5 characters'],
+            maxlength: [200, 'Address cannot exceed 200 characters']
         },
 
         landmark: {
             type: String,
             trim: true,
             default: '',
+            maxlength: [100, 'Landmark cannot exceed 100 characters']
         },
 
         city: {
             type: String,
-            required: true,
+            required: [true, 'City is required'],
             trim: true,
+            maxlength: [50, 'City cannot exceed 50 characters']
         },
 
         state: {
             type: String,
-            required: true,
+            required: [true, 'State is required'],
             trim: true,
+            maxlength: [50, 'State cannot exceed 50 characters']
         },
 
         pincode: {
             type: String,
             trim: true,
             default: '',
+            match: [/^\d{6}$/, 'Pincode must be exactly 6 digits']
         },
 
         // -----------------------------
@@ -81,19 +90,22 @@ const PropertySchema = new mongoose.Schema(
 
         bedrooms: {
             type: Number,
-            min: 0,
+            min: [0, 'Bedrooms cannot be negative'],
+            max: [20, 'Bedrooms cannot exceed 20'],
             default: 0,
         },
 
         bathrooms: {
             type: Number,
-            min: 0,
+            min: [0, 'Bathrooms cannot be negative'],
+            max: [20, 'Bathrooms cannot exceed 20'],
             default: 0,
         },
 
         area: {
             type: Number,
-            min: 0,
+            min: [0, 'Area cannot be negative'],
+            max: [1000000, 'Area cannot exceed 1,000,000 sq.ft'],
             default: 0,
         },
 
@@ -118,13 +130,15 @@ const PropertySchema = new mongoose.Schema(
 
         monthlyRent: {
             type: Number,
-            required: true,
-            min: 0,
+            required: [true, 'Monthly rent is required'],
+            min: [1, 'Monthly rent must be greater than 0'],
+            max: [10000000, 'Monthly rent cannot exceed 10,000,000']
         },
 
         securityDeposit: {
             type: Number,
-            min: 0,
+            min: [0, 'Security deposit cannot be negative'],
+            max: [50000000, 'Security deposit cannot exceed 50,000,000'],
             default: 0,
         },
 
@@ -165,7 +179,8 @@ const PropertySchema = new mongoose.Schema(
         conditions: {
             type: String,
             default: '',
-            trim: true
+            trim: true,
+            maxlength: [5000, 'Conditions cannot exceed 5000 characters']
         },
     },
     {
