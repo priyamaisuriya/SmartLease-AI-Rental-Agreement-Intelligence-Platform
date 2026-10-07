@@ -164,7 +164,7 @@ const RentalRequests = () => {
     // --------------------------------------------------------
 
     const actionText =
-      newStatus === 'active'
+      newStatus === 'accepted'
         ? 'accept this rental request'
         : 'reject this rental request';
 
@@ -211,7 +211,7 @@ const RentalRequests = () => {
       setSuccess(
         response.data?.message ||
         (
-          newStatus === 'active'
+          newStatus === 'accepted'
             ? 'Rental request accepted successfully.'
             : 'Rental request rejected successfully.'
         )
@@ -722,7 +722,7 @@ const RentalRequests = () => {
                   onClick={() =>
                     handleUpdateStatus(
                       row,
-                      'active'
+                      'accepted'
                     )
                   }
                   disabled={isLoading}
@@ -1003,7 +1003,7 @@ const RentalRequests = () => {
                   Pending
                 </option>
 
-                <option value="active">
+                <option value="accepted">
                   Accepted
                 </option>
 

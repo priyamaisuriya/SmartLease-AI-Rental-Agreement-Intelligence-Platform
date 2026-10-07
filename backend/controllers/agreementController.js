@@ -150,6 +150,11 @@ const uploadAgreement = async (req, res) => {
 
         await agreement.save();
 
+        if (rental.status === 'accepted') {
+            rental.status = 'agreement_uploaded';
+            await rental.save();
+        }
+
         // =====================================================
         // ACTIVITY LOG
         // =====================================================

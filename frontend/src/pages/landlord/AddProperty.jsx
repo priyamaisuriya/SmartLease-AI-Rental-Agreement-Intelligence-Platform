@@ -98,6 +98,7 @@ const AddProperty = () => {
     amenities: [],
     images: [],
     draftAgreement: null,
+    conditions: '',
   });
 
   const stepTitles = [
@@ -527,6 +528,7 @@ const AddProperty = () => {
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
     formDataObj.append('securityDeposit', Number(formData.securityDeposit || 0));
     formDataObj.append('description', formData.description.trim());
+    formDataObj.append('conditions', formData.conditions.trim());
 
     if (formData.landmark.trim()) {
       formDataObj.append('landmark', formData.landmark.trim());
@@ -890,6 +892,25 @@ const AddProperty = () => {
                   )
                 }
                 placeholder="Describe the property..."
+                className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500 resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">
+                Agreements / Conditions
+              </label>
+
+              <textarea
+                rows={4}
+                value={formData.conditions}
+                onChange={(e) =>
+                  updateField(
+                    'conditions',
+                    e.target.value
+                  )
+                }
+                placeholder="List any specific conditions or terms for the tenant..."
                 className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500 focus:ring-1 focus:ring-lease-500 resize-none"
               />
             </div>

@@ -13,3 +13,5 @@ Check notifications n reports accordingly.
 
 SO check whole project n do this complete flow  after successfull register n login 
 SO kindly make this
+
+Add validations in whole project on client side n server side in whole project keep min n max.. Think it like a Big Professional project n do all vaklidations n complete the project do all pending changes in my project
