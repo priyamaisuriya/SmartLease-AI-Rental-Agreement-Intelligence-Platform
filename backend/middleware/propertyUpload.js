@@ -29,6 +29,10 @@ const fileFilter = (req, file, cb) => {
         'image/jpg',
         'image/png',
         'image/webp',
+    ,
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
@@ -36,7 +40,7 @@ const fileFilter = (req, file, cb) => {
     } else {
         cb(
             new Error(
-                'Only JPG, JPEG, PNG and WEBP images are allowed.'
+                'Only JPG, JPEG, PNG, WEBP images, PDF, and DOCX files are allowed.'
             ),
             false
         );

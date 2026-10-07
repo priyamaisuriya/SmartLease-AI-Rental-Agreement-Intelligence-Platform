@@ -25,7 +25,7 @@ router.post(
     '/',
     auth,
     requirePermission('property-create'),
-    propertyUpload.array('images', 10),
+    propertyUpload.fields([{ name: 'images', maxCount: 10 }, { name: 'draftAgreement', maxCount: 1 }]),
     createProperty
 );
 
@@ -74,7 +74,7 @@ router.put(
     '/:id',
     auth,
     requirePermission('property-update'),
-    propertyUpload.array('images', 10),
+    propertyUpload.fields([{ name: 'images', maxCount: 10 }, { name: 'draftAgreement', maxCount: 1 }]),
     updateProperty
 );
 

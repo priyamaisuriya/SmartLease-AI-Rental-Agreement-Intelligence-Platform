@@ -1,4 +1,5 @@
 const Property = require('../models/Property');
+const Agreement = require('../models/Agreement');
 const User = require('../models/User');
 
 const {
@@ -49,17 +50,22 @@ const createProperty = async (req, res) => {
             area,
             furnishing,
             monthlyRent,
-            securityDeposit
+            securityDeposit,
+            amenities,
+            availableFrom,
+            landmark,
+            customPropertyType
         } = req.body;
 
+        if (!title || !propertyType || !address || !city || !state || monthlyRent === undefined) {
+            return res.status(400).json({ message: 'Title, property type, address, city, state and monthly rent are required' });
+        }
+
+        if (!req.files || !req.files.draftAgreement) {
+            return res.status(400).json({ message: 'A draft agreement document is required to list a property.' });
+        }
+
         if (
-            !title ||
-            !propertyType ||
-            !address ||
-            !city ||
-            !state ||
-            monthlyRent === undefined
-        ) {
             return res.status(400).json({
                 message:
                     'Title, property type, address, city, state and monthly rent are required'
@@ -81,6 +87,10 @@ const createProperty = async (req, res) => {
             furnishing,
             monthlyRent,
             securityDeposit,
+            amenities: Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []),
+            availableFrom: availableFrom || null,
+            landmark,
+            customPropertyType,
             status: 'available'
         };
 
@@ -89,6 +99,26 @@ const createProperty = async (req, res) => {
         }
 
         const property = await Property.create(propertyData);
+        
+        // Create Draft Agreement
+        const draftFile = req.files.draftAgreement[0];
+        let fileType = 'pdf';
+        if (draftFile.originalname.endsWith('.doc')) fileType = 'doc';
+        if (draftFile.originalname.endsWith('.docx')) fileType = 'docx';
+
+        const draftAgreement = await Agreement.create({
+            property: property._id,
+            landlord: req.user.id,
+            title: `Draft Agreement - ${property.title}`,
+            originalFileName: draftFile.originalname,
+            fileUrl: `/uploads/properties/${draftFile.filename}`,
+            fileType: fileType,
+            status: 'draft'
+        });
+
+        property.draftAgreement = draftAgreement._id;
+        await property.save();
+
 
         await createActivityLog({
             userId: req.user.id,
@@ -138,7 +168,7 @@ const getMyProperties = async (req, res) => {
             landlord: req.user.id
         })
             .sort({ createdAt: -1 })
-            .populate('landlord', 'name email phone');
+            .populate('landlord', 'name email phone').populate('draftAgreement');
 
         return res.json({
             count: properties.length,
@@ -176,7 +206,11 @@ const getAvailableProperties = async (req, res) => {
         } = req.query;
 
         const filter = {
-            status: 'available'
+            status: 'available',
+            $or: [
+                { availableFrom: null },
+                { availableFrom: { $lte: new Date() } }
+            ]
         };
 
         if (city) {
@@ -212,7 +246,7 @@ const getAvailableProperties = async (req, res) => {
 
         const properties = await Property.find(filter)
             .sort({ createdAt: -1 })
-            .populate('landlord', 'name phone');
+            .populate('landlord', 'name phone').populate('draftAgreement');
 
         return res.json({
             count: properties.length,
@@ -241,7 +275,7 @@ const getPropertyById = async (req, res) => {
     try {
 
         const property = await Property.findById(req.params.id)
-            .populate('landlord', 'name email phone');
+            .populate('landlord', 'name email phone').populate('draftAgreement');
 
         if (!property) {
             return res.status(404).json({
@@ -304,7 +338,11 @@ const updateProperty = async (req, res) => {
             'area',
             'furnishing',
             'monthlyRent',
-            'securityDeposit'
+            'securityDeposit',
+            'amenities',
+            'availableFrom',
+            'landmark',
+            'customPropertyType'
         ];
 
         const changedFields = [];
@@ -312,10 +350,13 @@ const updateProperty = async (req, res) => {
         allowedFields.forEach((field) => {
 
             if (req.body[field] !== undefined) {
-
-                property[field] =
-                    req.body[field];
-
+                if (field === 'amenities') {
+                    property[field] = Array.isArray(req.body[field]) ? req.body[field] : (req.body[field] ? [req.body[field]] : []);
+                } else if (field === 'availableFrom' && !req.body[field]) {
+                    property[field] = null;
+                } else {
+                    property[field] = req.body[field];
+                }
                 changedFields.push(field);
             }
         });
@@ -334,7 +375,7 @@ const updateProperty = async (req, res) => {
             updatedImages = [...updatedImages, ...newImages];
         }
 
-        if (req.body.images !== undefined || (req.files && req.files.length > 0)) {
+        if (req.body.images !== undefined || (req.files && req.files.images)) {
              property.images = updatedImages;
              if (!changedFields.includes('images')) changedFields.push('images');
         }

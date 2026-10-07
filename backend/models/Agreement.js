@@ -11,7 +11,7 @@ const AgreementSchema = new mongoose.Schema(
         rental: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Rental',
-            required: true,
+            required: false,
         },
 
         landlord: {
@@ -23,7 +23,7 @@ const AgreementSchema = new mongoose.Schema(
         tenant: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
-            required: true,
+            required: false,
         },
 
         title: {
@@ -50,7 +50,7 @@ const AgreementSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ['active', 'expired', 'terminated'],
+            enum: ['draft', 'active', 'expired', 'terminated'],
             default: 'active',
         },
 

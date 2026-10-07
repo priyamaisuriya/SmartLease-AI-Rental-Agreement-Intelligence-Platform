@@ -1,6 +1,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const xss = require('xss-clean');
+const mongoSanitize = require('express-mongo-sanitize');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -66,6 +68,8 @@ const feedbackRoutes =
 app.use(cors());
 
 app.use(express.json());
+app.use(xss());
+app.use(mongoSanitize());
 
 app.use(
   '/uploads',

@@ -318,20 +318,11 @@ const PropertyDetails = () => {
             </p>
 
             <p className="text-sm font-medium text-ink">
-              {property.bedrooms ?? '—'}
+              {property.bedrooms > 0 ? property.bedrooms : (property.customPropertyType || property.propertyType || '—')}
             </p>
           </div>
 
-          {/* Bathrooms */}
-          <div>
-            <p className="text-xs text-text-faint mb-1">
-              Bathrooms
-            </p>
 
-            <p className="text-sm font-medium text-ink">
-              {property.bathrooms ?? '—'}
-            </p>
-          </div>
 
           {/* Area */}
           <div>

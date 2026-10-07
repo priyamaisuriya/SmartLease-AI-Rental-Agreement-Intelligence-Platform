@@ -155,6 +155,12 @@ const PropertySchema = new mongoose.Schema(
             type: [String],
             default: [],
         },
+
+        draftAgreement: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Agreement',
+            default: null
+        },
     },
     {
         timestamps: true,

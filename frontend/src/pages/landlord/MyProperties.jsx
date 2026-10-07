@@ -33,11 +33,7 @@ const PropertyCard = ({
     .join(', ');
 
   const bhk =
-    property.bedrooms !== undefined &&
-      property.bedrooms !== null &&
-      property.bedrooms !== ''
-      ? `${property.bedrooms} BHK`
-      : property.propertyType || 'Property';
+    property.bedrooms > 0 ? `${property.bedrooms} BHK` : (property.customPropertyType || property.propertyType || 'Property');
 
   const tenant =
     property.currentTenant?.name ||

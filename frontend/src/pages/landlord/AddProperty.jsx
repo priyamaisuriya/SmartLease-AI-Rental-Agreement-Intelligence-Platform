@@ -97,6 +97,7 @@ const AddProperty = () => {
 
     amenities: [],
     images: [],
+    draftAgreement: null,
   });
 
   const stepTitles = [
@@ -1192,11 +1193,45 @@ const AddProperty = () => {
           </div>
         )}
 
-        {/* STEP 5 */}
-        {step === 5 && (
-          <div className="animate-in fade-in slide-in-from-bottom-4">
+        
+          {/* STEP 5 */}
+          {step === 5 && (
+            <div className="animate-in fade-in slide-in-from-bottom-4">
+              
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-ink mb-4">Upload Draft Agreement (Required)</h3>
+                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-paper hover:bg-border/30 transition-colors">
+                  <UploadCloud className="w-10 h-10 text-text-faint mx-auto mb-3" />
+                  <p className="text-sm text-text-muted mt-1">
+                    Upload a PDF or DOCX file containing the draft rental agreement.
+                  </p>
+                  
+                  {formData.draftAgreement ? (
+                    <div className="mt-4 flex items-center justify-center gap-3 bg-white p-3 rounded-lg border border-border inline-flex mx-auto">
+                      <span className="text-sm font-medium truncate max-w-[200px]">{formData.draftAgreement.name || 'Agreement Document'}</span>
+                      <button onClick={() => updateField('draftAgreement', null)} className="text-risk-red hover:bg-risk-red-bg p-1 rounded"><X className="w-4 h-4"/></button>
+                    </div>
+                  ) : (
+                    <label className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium shadow-sm hover:bg-paper transition-colors cursor-pointer">
+                      Select Document
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={(e) => {
+                           if (e.target.files && e.target.files[0]) {
+                               updateField('draftAgreement', e.target.files[0]);
+                           }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
 
-            <div className="border-2 border-dashed border-border rounded-xl p-10 text-center bg-paper hover:bg-border/30 transition-colors">
+              <h3 className="text-lg font-medium text-ink mb-4">Property Images</h3>
+              <div className="border-2 border-dashed border-border rounded-xl p-10 text-center bg-paper hover:bg-border/30 transition-colors">
+
 
               <UploadCloud className="w-12 h-12 text-text-faint mx-auto mb-4" />
 

@@ -7,12 +7,12 @@ const Properties = () => {
   const [properties, setProperties] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [city, setCity] = useState('Surat');
-  const [state, setState] = useState('Gujarat');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
 
   const [priceRange, setPriceRange] = useState({
-    min: 8000,
-    max: 25000,
+    min: '',
+    max: '',
   });
 
   const [selectedBhk, setSelectedBhk] = useState('');
@@ -780,8 +780,7 @@ const Properties = () => {
                                 />
                               </svg>
 
-                              {property.bedrooms || 0}{' '}
-                              BHK
+                              {property.bedrooms > 0 ? `${property.bedrooms} BHK` : (property.customPropertyType || property.propertyType || 'Property')}
 
                             </span>
 
