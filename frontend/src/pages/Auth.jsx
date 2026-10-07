@@ -1166,9 +1166,16 @@ const Auth = () => {
 
             <div>
 
-              <label className="block text-xs uppercase tracking-[0.08em] text-text-muted mb-1.5 font-semibold">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-xs uppercase tracking-[0.08em] text-text-muted font-semibold m-0">
+                  Password
+                </label>
+                {isLogin && (
+                  <Link to="/forgot-password" className="text-xs text-gold-deep hover:text-ink font-semibold">
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
 
 
               <div className="relative">
