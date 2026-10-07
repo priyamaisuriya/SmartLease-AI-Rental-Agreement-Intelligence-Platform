@@ -1,8 +1,6 @@
 require('dotenv').config();
 
 const express = require('express');
-const xss = require('xss-clean');
-const mongoSanitize = require('express-mongo-sanitize');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -14,6 +12,11 @@ const {
 const app = express();
 
 const PORT = process.env.PORT || 5000;
+
+
+// ============================================================
+// ROUTES
+// ============================================================
 
 const permissionRoutes =
   require('./routes/permissionRoutes');
@@ -63,11 +66,19 @@ const adminFeedbackRoutes =
 const feedbackRoutes =
   require('./routes/feedbackRoutes');
 
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+
 app.use(cors());
 
 app.use(express.json());
-app.use(xss());
-app.use(mongoSanitize());
+
+
+// ============================================================
+// STATIC UPLOADS
+// ============================================================
 
 app.use(
   '/uploads',
@@ -76,19 +87,33 @@ app.use(
   )
 );
 
+
+// ============================================================
+// MONGODB CONNECTION
+// ============================================================
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
+
     console.log('MongoDB connected');
 
     startRentReminderScheduler();
+
   })
   .catch((err) => {
+
     console.error(
       'MongoDB connection error:',
       err
     );
+
   });
+
+
+// ============================================================
+// AUTH ROUTES
+// ============================================================
 
 app.use(
   '/api/auth',
@@ -99,6 +124,11 @@ app.use(
   '/api/users',
   require('./routes/users')
 );
+
+
+// ============================================================
+// MAIN APPLICATION ROUTES
+// ============================================================
 
 app.use(
   '/api/permissions',
@@ -140,6 +170,11 @@ app.use(
   rentReminderRoutes
 );
 
+
+// ============================================================
+// ADMIN ROUTES
+// ============================================================
+
 app.use(
   '/api/admin/dashboard',
   adminDashboardRoutes
@@ -180,21 +215,35 @@ app.use(
   activityLogRoutes
 );
 
+
+// ============================================================
+// HEALTH CHECK
+// ============================================================
+
 app.get(
   '/api/health',
   (req, res) => {
+
     res.status(200).json({
       status: 'OK',
       message: 'Backend is running!'
     });
+
   }
 );
+
+
+// ============================================================
+// START SERVER
+// ============================================================
 
 app.listen(
   PORT,
   () => {
+
     console.log(
       `Server is running on port ${PORT}`
     );
+
   }
 );
