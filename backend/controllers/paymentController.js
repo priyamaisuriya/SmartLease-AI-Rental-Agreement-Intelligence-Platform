@@ -5,7 +5,6 @@ const Rental = require('../models/Rental');
 const Property = require('../models/Property');
 const User = require('../models/User');
 
-
 // ============================================================
 // CREATE MOCK PAYMENT ORDER
 // TENANT CAN PAY ONLY AFTER LANDLORD ACCEPTS
@@ -13,7 +12,6 @@ const User = require('../models/User');
 
 const createPaymentOrder = async (req, res) => {
     try {
-
         const { rentalId } = req.body;
 
         if (!rentalId) {
@@ -21,7 +19,6 @@ const createPaymentOrder = async (req, res) => {
                 message: 'Rental ID is required'
             });
         }
-
 
         // ------------------------------------------------------
         // FIND RENTAL
@@ -34,7 +31,6 @@ const createPaymentOrder = async (req, res) => {
                 message: 'Rental not found'
             });
         }
-
 
         // ------------------------------------------------------
         // CHECK TENANT
@@ -50,7 +46,6 @@ const createPaymentOrder = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // PAYMENT ONLY AFTER ACCEPTANCE
         // ------------------------------------------------------
@@ -61,7 +56,6 @@ const createPaymentOrder = async (req, res) => {
                     'Payment is available only after the landlord accepts the rental request'
             });
         }
-
 
         // ------------------------------------------------------
         // FIND PROPERTY
@@ -75,7 +69,6 @@ const createPaymentOrder = async (req, res) => {
                 message: 'Property not found'
             });
         }
-
 
         // ------------------------------------------------------
         // CHECK EXISTING PAID PAYMENT
@@ -91,10 +84,23 @@ const createPaymentOrder = async (req, res) => {
             return res.status(400).json({
                 message:
                     'Payment has already been completed for this rental',
-                payment: existingPaidPayment
+                payment: {
+                    paymentId: existingPaidPayment._id,
+                    transactionId:
+                        existingPaidPayment.transactionId,
+                    amount:
+                        existingPaidPayment.amount,
+                    currency:
+                        existingPaidPayment.currency,
+                    paymentStatus:
+                        existingPaidPayment.paymentStatus,
+                    paymentMethod:
+                        existingPaidPayment.paymentMethod,
+                    paidAt:
+                        existingPaidPayment.paidAt
+                }
             });
         }
-
 
         // ------------------------------------------------------
         // CALCULATE INITIAL PAYMENT
@@ -110,14 +116,12 @@ const createPaymentOrder = async (req, res) => {
         const amount =
             monthlyRent + securityDeposit;
 
-
         if (amount <= 0) {
             return res.status(400).json({
                 message:
                     'Invalid payment amount'
             });
         }
-
 
         // ------------------------------------------------------
         // CHECK EXISTING PENDING PAYMENT
@@ -135,23 +139,32 @@ const createPaymentOrder = async (req, res) => {
             });
 
         if (existingPayment) {
-
             return res.json({
                 message:
                     'Payment order already exists',
+
                 order: {
                     paymentId:
                         existingPayment._id,
+
                     transactionId:
                         existingPayment.transactionId,
+
                     amount:
                         existingPayment.amount,
+
                     currency:
-                        existingPayment.currency
+                        existingPayment.currency,
+
+                    propertyName:
+                        property.title,
+
+                    monthlyRent,
+
+                    securityDeposit
                 }
             });
         }
-
 
         // ------------------------------------------------------
         // GENERATE MOCK TRANSACTION ID
@@ -162,7 +175,6 @@ const createPaymentOrder = async (req, res) => {
                 .randomBytes(4)
                 .toString('hex')
                 .toUpperCase()}`;
-
 
         // ------------------------------------------------------
         // CREATE PAYMENT
@@ -194,9 +206,7 @@ const createPaymentOrder = async (req, res) => {
 
                 paymentStatus:
                     'created'
-
             });
-
 
         return res.status(201).json({
 
@@ -223,7 +233,6 @@ const createPaymentOrder = async (req, res) => {
                 monthlyRent,
 
                 securityDeposit
-
             }
 
         });
@@ -257,14 +266,12 @@ const processMockPayment = async (req, res) => {
             result
         } = req.body;
 
-
         if (!paymentId) {
             return res.status(400).json({
                 message:
                     'Payment ID is required'
             });
         }
-
 
         // ------------------------------------------------------
         // FIND PAYMENT
@@ -280,7 +287,6 @@ const processMockPayment = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // CHECK TENANT
         // ------------------------------------------------------
@@ -295,7 +301,6 @@ const processMockPayment = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // PREVENT DUPLICATE PAYMENT
         // ------------------------------------------------------
@@ -307,10 +312,31 @@ const processMockPayment = async (req, res) => {
             return res.status(400).json({
                 message:
                     'Payment is already completed',
-                payment
+
+                payment: {
+                    paymentId:
+                        payment._id,
+
+                    transactionId:
+                        payment.transactionId,
+
+                    amount:
+                        payment.amount,
+
+                    currency:
+                        payment.currency,
+
+                    paymentStatus:
+                        payment.paymentStatus,
+
+                    paymentMethod:
+                        payment.paymentMethod,
+
+                    paidAt:
+                        payment.paidAt
+                }
             });
         }
-
 
         // ------------------------------------------------------
         // MOCK FAILURE
@@ -334,17 +360,27 @@ const processMockPayment = async (req, res) => {
 
                 payment: {
 
+                    paymentId:
+                        payment._id,
+
                     transactionId:
                         payment.transactionId,
 
-                    paymentStatus:
-                        payment.paymentStatus
+                    amount:
+                        payment.amount,
 
+                    currency:
+                        payment.currency,
+
+                    paymentStatus:
+                        payment.paymentStatus,
+
+                    paymentMethod:
+                        payment.paymentMethod
                 }
 
             });
         }
-
 
         // ------------------------------------------------------
         // MOCK SUCCESS
@@ -362,7 +398,6 @@ const processMockPayment = async (req, res) => {
 
         await payment.save();
 
-
         return res.json({
 
             message:
@@ -370,7 +405,7 @@ const processMockPayment = async (req, res) => {
 
             payment: {
 
-                _id:
+                paymentId:
                     payment._id,
 
                 transactionId:
@@ -390,7 +425,6 @@ const processMockPayment = async (req, res) => {
 
                 paidAt:
                     payment.paidAt
-
             }
 
         });
@@ -422,6 +456,9 @@ const getPaymentStatus = async (req, res) => {
             rentalId
         } = req.params;
 
+        // ------------------------------------------------------
+        // FIND RENTAL
+        // ------------------------------------------------------
 
         const rental =
             await Rental.findById(rentalId);
@@ -433,13 +470,18 @@ const getPaymentStatus = async (req, res) => {
             });
         }
 
+        // ------------------------------------------------------
+        // CHECK ACCESS
+        // TENANT / LANDLORD / ADMIN
+        // ------------------------------------------------------
 
-        // Tenant / landlord access
         if (
             rental.tenant.toString() !==
             req.user.id &&
+
             rental.landlord.toString() !==
             req.user.id &&
+
             req.user.role !== 'admin'
         ) {
             return res.status(403).json({
@@ -448,6 +490,9 @@ const getPaymentStatus = async (req, res) => {
             });
         }
 
+        // ------------------------------------------------------
+        // FIND LATEST PAYMENT
+        // ------------------------------------------------------
 
         const payment =
             await Payment.findOne({
@@ -457,6 +502,9 @@ const getPaymentStatus = async (req, res) => {
                 createdAt: -1
             });
 
+        // ------------------------------------------------------
+        // NO PAYMENT FOUND
+        // ------------------------------------------------------
 
         if (!payment) {
 
@@ -469,12 +517,60 @@ const getPaymentStatus = async (req, res) => {
             });
         }
 
+        // ------------------------------------------------------
+        // RETURN CONSISTENT PAYMENT OBJECT
+        // IMPORTANT:
+        // FRONTEND USES payment.paymentId
+        // ------------------------------------------------------
 
         return res.json({
 
             hasPayment: true,
 
-            payment
+            payment: {
+
+                paymentId:
+                    payment._id,
+
+                transactionId:
+                    payment.transactionId,
+
+                amount:
+                    payment.amount,
+
+                currency:
+                    payment.currency,
+
+                paymentType:
+                    payment.paymentType,
+
+                paymentStatus:
+                    payment.paymentStatus,
+
+                paymentMethod:
+                    payment.paymentMethod,
+
+                paidAt:
+                    payment.paidAt,
+
+                rental:
+                    payment.rental,
+
+                property:
+                    payment.property,
+
+                tenant:
+                    payment.tenant,
+
+                landlord:
+                    payment.landlord,
+
+                createdAt:
+                    payment.createdAt,
+
+                updatedAt:
+                    payment.updatedAt
+            }
 
         });
 
@@ -492,6 +588,10 @@ const getPaymentStatus = async (req, res) => {
     }
 };
 
+
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
 
