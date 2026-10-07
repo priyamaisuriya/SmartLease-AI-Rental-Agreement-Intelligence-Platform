@@ -684,82 +684,141 @@ router.get(
 
 
 // ============================================================
-// FORGOT PASSWORD
-// POST /api/auth/forgot-password
+// FORGOT PASSWORD - SEND OTP
+// POST /api/auth/forgot-password/send-otp
 // PUBLIC
 // ============================================================
 
 router.post(
-  '/forgot-password',
+  '/forgot-password/send-otp',
   async (req, res) => {
     try {
       const { email } = req.body;
 
       if (!email) {
         return res.status(400).json({
-          message:
-            'Email is required.'
+          message: 'Email is required.'
         });
       }
 
-      const normalizedEmail =
-        email.trim().toLowerCase();
+      const normalizedEmail = email.trim().toLowerCase();
 
-      const user =
-        await User.findOne({
-          email: normalizedEmail
-        });
+      const user = await User.findOne({
+        email: normalizedEmail
+      });
 
       if (!user) {
         return res.status(200).json({
-          message:
-            'If an account exists with this email, a password reset link has been sent.'
+          message: 'If an account exists with this email, an OTP has been sent.'
         });
       }
 
-      const resetToken =
-        crypto
-          .randomBytes(32)
-          .toString('hex');
+      const otp = crypto.randomInt(100000, 1000000).toString();
+      const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-      const hashedToken =
-        crypto
-          .createHash('sha256')
-          .update(resetToken)
-          .digest('hex');
+      await EmailVerification.deleteOne({ email: normalizedEmail });
+      await EmailVerification.create({
+        email: normalizedEmail,
+        otpHash,
+        expiresAt,
+        attempts: 0,
+        verified: false
+      });
 
-      user.resetPasswordToken =
-        hashedToken;
-
-      user.resetPasswordExpires =
-        new Date(
-          Date.now() + 15 * 60 * 1000
-        );
-
-      await user.save();
-
-      const resetUrl =
-        `http://localhost:5173/reset-password/${resetToken}`;
-
-      console.log(
-        'Password reset URL:',
-        resetUrl
-      );
+      await sendVerificationOTP(normalizedEmail, otp);
 
       return res.status(200).json({
-        message:
-          'If an account exists with this email, a password reset link has been sent.'
+        message: 'If an account exists with this email, an OTP has been sent.'
       });
 
     } catch (err) {
-      console.error(
-        'Forgot password error:',
-        err.message
-      );
-
+      console.error('Forgot password send otp error:', err.message);
       return res.status(500).json({
-        message:
-          'Unable to process password reset request.'
+        message: 'Unable to process password reset request.'
+      });
+    }
+  }
+);
+
+
+// ============================================================
+// FORGOT PASSWORD - VERIFY OTP
+// POST /api/auth/forgot-password/verify-otp
+// PUBLIC
+// ============================================================
+
+router.post(
+  '/forgot-password/verify-otp',
+  async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return res.status(400).json({
+          message: 'Email and OTP are required'
+        });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const verification = await EmailVerification.findOne({
+        email: normalizedEmail
+      });
+
+      if (!verification) {
+        return res.status(400).json({
+          message: 'OTP not found. Please request a new OTP.'
+        });
+      }
+
+      if (verification.expiresAt < new Date()) {
+        await EmailVerification.deleteOne({ email: normalizedEmail });
+        return res.status(400).json({
+          message: 'OTP has expired. Please request a new OTP.'
+        });
+      }
+
+      if (verification.attempts >= 5) {
+        await EmailVerification.deleteOne({ email: normalizedEmail });
+        return res.status(400).json({
+          message: 'Too many incorrect attempts. Please request a new OTP.'
+        });
+      }
+
+      const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+
+      if (otpHash !== verification.otpHash) {
+        verification.attempts += 1;
+        await verification.save();
+        return res.status(400).json({
+          message: 'Invalid OTP. Please check the code and try again.'
+        });
+      }
+
+      const user = await User.findOne({ email: normalizedEmail });
+      if (!user) {
+        return res.status(400).json({ message: 'User not found.' });
+      }
+
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+      user.resetPasswordToken = hashedToken;
+      user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+      await user.save();
+
+      await EmailVerification.deleteOne({ email: normalizedEmail });
+
+      return res.status(200).json({
+        message: 'OTP verified successfully.',
+        resetToken
+      });
+
+    } catch (err) {
+      console.error('Forgot password verify otp error:', err.message);
+      return res.status(500).json({
+        message: 'Unable to verify OTP. Please try again.'
       });
     }
   }
