@@ -1,0 +1,15 @@
+I want to keep flow like :
+Landlord add property along with some common agreements/conditions/ or anything
+so when tenant book that property they can get to know property after reading that property conditions than only tenant can request that property 
+After that request if landloard accept that property then landlord will upload agreement between them 
+and after tenant accept that agreement then only payment option will be done and after successfull payment tenant can confirm that booking.. 
+And till rental request is confirmed other tenant logins can view n request that booking.
+And if rental request is confirmed then also show property to tenant but allow to request that property for that same dates..
+And if there is multiple request of booking is there n admin has accepted booking for that date then don't allow to accept other tenant request for that same date request..
+Keep dates criteria that it can not be clashed..
+And for AI keep agreement analysis using AI n conditions analysis using AI will be 
+AI chat will be also added which will have options of uploading pdf or doc for AI chat so chat can be done on that uploaded doc/pdf.
+Check notifications n reports accordingly.
+
+SO check whole project n do this complete flow  after successfull register n login 
+SO kindly make this
