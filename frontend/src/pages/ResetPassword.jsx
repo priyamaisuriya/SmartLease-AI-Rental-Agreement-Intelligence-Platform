@@ -36,7 +36,7 @@ const ResetPassword = () => {
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate('/auth');
+        navigate('/login');
       }, 3000);
       
     } catch (err) {
@@ -72,7 +72,7 @@ const ResetPassword = () => {
                 Your password has been successfully updated. You will be redirected to the login page momentarily.
               </p>
               <Link 
-                to="/auth"
+                to="/login"
                 className="w-full flex items-center justify-center py-3 bg-ink text-white rounded-lg font-medium hover:bg-ink-dark transition-colors"
               >
                 Go to Login
