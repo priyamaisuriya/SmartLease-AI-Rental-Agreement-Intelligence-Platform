@@ -75,6 +75,32 @@ const paymentSchema = new mongoose.Schema(
         paidAt: {
             type: Date,
             default: null
+        },
+
+        // =====================================================
+        // INVOICE DETAILS
+        // =====================================================
+
+        invoiceNumber: {
+            type: String,
+            unique: true,
+            sparse: true,
+            default: null
+        },
+
+        invoicePath: {
+            type: String,
+            default: null
+        },
+
+        invoiceGeneratedAt: {
+            type: Date,
+            default: null
+        },
+
+        invoiceEmailSentAt: {
+            type: Date,
+            default: null
         }
     },
     {
