@@ -58,6 +58,14 @@ const Settings = () => {
     }, 3000);
   };
 
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset all settings to their default values?")) {
+      localStorage.removeItem(NOTIFICATION_SETTINGS_KEY);
+      setSettings(DEFAULT_SETTINGS);
+      setSecurity({ currentPassword: '', newPassword: '' });
+    }
+  };
+
   return (
     <div className="space-y-6 fade-in pb-8 max-w-4xl mx-auto">
 
@@ -67,14 +75,24 @@ const Settings = () => {
           Account Settings
         </h1>
 
-        <button
-          type="button"
-          onClick={handleSave}
-          className="flex items-center gap-2 px-4 py-2 bg-lease-600 text-white rounded-lg text-sm font-medium hover:bg-lease-700 transition-colors"
-        >
-          <Save className="w-4 h-4" />
-          <span>Save Changes</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex items-center gap-2 px-4 py-2 bg-paper border border-border text-ink rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <span>Reset to Defaults</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleSave}
+            className="flex items-center gap-2 px-4 py-2 bg-lease-600 text-white rounded-lg text-sm font-medium hover:bg-lease-700 transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            <span>Save Changes</span>
+          </button>
+        </div>
       </div>
 
       {/* SUCCESS MESSAGE */}
