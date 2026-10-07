@@ -11,7 +11,9 @@ const {
     getLandlordRentals,
     getRentalById,
     cancelRental,
-    updateRentalStatus
+    updateRentalStatus,
+    acceptAgreement,
+    confirmBooking
 } = require('../controllers/rentalController');
 
 
@@ -83,6 +85,26 @@ router.patch(
     '/:id/status',
     auth,
     updateRentalStatus
+);
+
+// ============================================================
+// TENANT — ACCEPT AGREEMENT
+// ============================================================
+
+router.patch(
+    '/:id/accept-agreement',
+    auth,
+    acceptAgreement
+);
+
+// ============================================================
+// TENANT — CONFIRM BOOKING (Payment)
+// ============================================================
+
+router.patch(
+    '/:id/confirm',
+    auth,
+    confirmBooking
 );
 
 

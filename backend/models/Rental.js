@@ -49,11 +49,16 @@ const RentalSchema = new mongoose.Schema(
             type: String,
             enum: [
                 'pending',
+                'accepted',
+                'agreement_uploaded',
+                'agreement_accepted',
+                'confirmed',
                 'active',
                 'completed',
                 'cancelled',
+                'rejected'
             ],
-            default: 'active',
+            default: 'pending',
         },
     },
     {

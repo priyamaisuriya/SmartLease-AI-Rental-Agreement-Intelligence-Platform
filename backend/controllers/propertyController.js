@@ -54,7 +54,8 @@ const createProperty = async (req, res) => {
             amenities,
             availableFrom,
             landmark,
-            customPropertyType
+            customPropertyType,
+            conditions
         } = req.body;
 
 
@@ -120,6 +121,7 @@ const createProperty = async (req, res) => {
             availableFrom: availableFrom || null,
             landmark,
             customPropertyType,
+            conditions: conditions || '',
 
             status: 'available'
         };
@@ -586,7 +588,8 @@ const updateProperty = async (req, res) => {
             'amenities',
             'availableFrom',
             'landmark',
-            'customPropertyType'
+            'customPropertyType',
+            'conditions'
 
         ];
 

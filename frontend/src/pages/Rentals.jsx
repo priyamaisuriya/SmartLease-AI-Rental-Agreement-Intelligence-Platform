@@ -14,15 +14,10 @@ const Rentals = () => {
       try {
         setLoading(true);
         setError('');
-
         const response = await api.get('/rentals/my-rentals');
-
-        console.log('My rentals response:', response.data);
-
         setRentals(response.data.rentals || []);
       } catch (err) {
         console.error('Failed to load rentals:', err);
-
         setError(
           err.response?.data?.message ||
           'Failed to load your rentals.'
@@ -31,16 +26,44 @@ const Rentals = () => {
         setLoading(false);
       }
     };
-
     fetchRentals();
   }, []);
+
+  const handleAcceptAgreement = async (id) => {
+    try {
+      await api.patch(`/rentals/${id}/accept-agreement`);
+      // Refresh rentals
+      const response = await api.get('/rentals/my-rentals');
+      setRentals(response.data.rentals || []);
+      alert('Agreement accepted successfully.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to accept agreement.');
+    }
+  };
+
+  const handleConfirmBooking = async (id) => {
+    try {
+      await api.patch(`/rentals/${id}/confirm`);
+      // Refresh rentals
+      const response = await api.get('/rentals/my-rentals');
+      setRentals(response.data.rentals || []);
+      alert('Booking confirmed (Mock Payment Successful).');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to confirm booking.');
+    }
+  };
 
   const statusBadge = (status) => {
     const statusClasses = {
       active: 'bg-good-50 text-good-600',
+      confirmed: 'bg-green-100 text-green-700',
       completed: 'bg-gray-100 text-gray-600',
-      pending: 'bg-lease-50 text-lease-700',
+      pending: 'bg-yellow-50 text-yellow-600',
+      accepted: 'bg-blue-50 text-blue-600',
+      agreement_uploaded: 'bg-purple-50 text-purple-600',
+      agreement_accepted: 'bg-indigo-50 text-indigo-600',
       cancelled: 'bg-red-50 text-red-600',
+      rejected: 'bg-red-50 text-red-600',
     };
 
     return (
@@ -306,6 +329,24 @@ const Rentals = () => {
                         >
                           Analyze Agreement
                         </Link>
+
+                        {r.status === 'agreement_uploaded' && (
+                          <button
+                            onClick={() => handleAcceptAgreement(r._id)}
+                            className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                          >
+                            Accept Agreement
+                          </button>
+                        )}
+
+                        {r.status === 'agreement_accepted' && (
+                          <button
+                            onClick={() => handleConfirmBooking(r._id)}
+                            className="rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700"
+                          >
+                            Pay & Confirm
+                          </button>
+                        )}
 
                         <button
                           onClick={() =>

@@ -645,6 +645,13 @@ const PropertyDetails = () => {
                 {property.description ||
                   'No description available.'}
               </p>
+
+              {property.conditions && (
+                <div className="mt-4 p-4 bg-lease-50 rounded-lg border border-lease-100">
+                  <h3 className="text-sm font-semibold text-lease-800 mb-2">Conditions & Agreements</h3>
+                  <p className="text-sm text-lease-700 whitespace-pre-wrap">{property.conditions}</p>
+                </div>
+              )}
             </div>
 
             {/* PROPERTY DETAILS */}
