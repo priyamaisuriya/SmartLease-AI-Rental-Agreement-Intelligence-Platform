@@ -1,14 +1,21 @@
 const express = require('express');
 
-const router = express.Router();
+const router =
+  express.Router();
+
 
 const {
-    createPaymentOrder,
-    processMockPayment,
-    getPaymentStatus
-} = require('../controllers/paymentController');
+  createPaymentOrder,
+  processMockPayment,
+  getPaymentStatus,
+  downloadInvoice
+} = require(
+  '../controllers/paymentController'
+);
 
-const auth = require('../middleware/auth');
+
+const auth =
+  require('../middleware/auth');
 
 
 // ============================================================
@@ -16,9 +23,9 @@ const auth = require('../middleware/auth');
 // ============================================================
 
 router.post(
-    '/create-order',
-    auth,
-    createPaymentOrder
+  '/create-order',
+  auth,
+  createPaymentOrder
 );
 
 
@@ -27,20 +34,31 @@ router.post(
 // ============================================================
 
 router.post(
-    '/process',
-    auth,
-    processMockPayment
+  '/process',
+  auth,
+  processMockPayment
 );
 
 
 // ============================================================
-// GET PAYMENT STATUS
+// PAYMENT STATUS
 // ============================================================
 
 router.get(
-    '/status/:rentalId',
-    auth,
-    getPaymentStatus
+  '/status/:rentalId',
+  auth,
+  getPaymentStatus
+);
+
+
+// ============================================================
+// DOWNLOAD INVOICE
+// ============================================================
+
+router.get(
+  '/invoice/:paymentId',
+  auth,
+  downloadInvoice
 );
 
 

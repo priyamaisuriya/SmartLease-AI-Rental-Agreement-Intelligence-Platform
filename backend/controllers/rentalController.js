@@ -6,7 +6,6 @@ const {
     createActivityLog
 } = require('../services/activityLogService');
 
-
 // ============================================================
 // BOOK / REQUEST PROPERTY
 // ============================================================
@@ -39,7 +38,6 @@ const bookProperty = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // REQUEST DATA
         // ------------------------------------------------------
@@ -55,7 +53,6 @@ const bookProperty = async (req, res) => {
                 message: 'Property ID is required'
             });
         }
-
 
         // ------------------------------------------------------
         // FIND PROPERTY
@@ -75,7 +72,6 @@ const bookProperty = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // CHECK EXISTING REQUEST
         // ------------------------------------------------------
@@ -84,16 +80,23 @@ const bookProperty = async (req, res) => {
             property: property._id,
             tenant: req.user.id,
             status: {
-                $in: ['pending', 'accepted', 'agreement_uploaded', 'agreement_accepted', 'confirmed', 'active']
+                $in: [
+                    'pending',
+                    'accepted',
+                    'agreement_uploaded',
+                    'agreement_accepted',
+                    'confirmed',
+                    'active'
+                ]
             }
         });
 
         if (existingRental) {
             return res.status(400).json({
-                message: 'You already have an ongoing request or active rental for this property'
+                message:
+                    'You already have an ongoing request or active rental for this property'
             });
         }
-
 
         // ------------------------------------------------------
         // VALIDATE DATES
@@ -113,34 +116,46 @@ const bookProperty = async (req, res) => {
                 });
             }
 
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-
-            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-                return res.status(400).json({ message: 'Invalid rental dates' });
-            }
-
             if (end <= start) {
-                return res.status(400).json({ message: 'End date must be after start date' });
+                return res.status(400).json({
+                    message: 'End date must be after start date'
+                });
             }
 
-            // Check for clashing confirmed rentals
+            // --------------------------------------------------
+            // CHECK FOR CLASHING CONFIRMED / ACTIVE RENTALS
+            // --------------------------------------------------
+
             const clashingRental = await Rental.findOne({
                 property: property._id,
-                status: { $in: ['confirmed', 'active'] },
+
+                status: {
+                    $in: [
+                        'confirmed',
+                        'active'
+                    ]
+                },
+
                 $or: [
-                    { startDate: { $lte: end }, endDate: { $gte: start } }
+                    {
+                        startDate: {
+                            $lte: end
+                        },
+
+                        endDate: {
+                            $gte: start
+                        }
+                    }
                 ]
             });
 
             if (clashingRental) {
                 return res.status(400).json({
-                    message: 'Property is already booked and confirmed for these dates'
+                    message:
+                        'Property is already booked and confirmed for these dates'
                 });
             }
         }
-
 
         // ------------------------------------------------------
         // CREATE PENDING REQUEST
@@ -165,11 +180,8 @@ const bookProperty = async (req, res) => {
             securityDeposit:
                 property.securityDeposit,
 
-            // IMPORTANT:
-            // Request is pending until landlord accepts it.
             status: 'pending'
         });
-
 
         // ------------------------------------------------------
         // POPULATE RESPONSE
@@ -189,7 +201,6 @@ const bookProperty = async (req, res) => {
                     'tenant',
                     'name email phone'
                 );
-
 
         // ------------------------------------------------------
         // ACTIVITY LOG
@@ -233,7 +244,6 @@ const bookProperty = async (req, res) => {
             status: 'success'
         });
 
-
         // ------------------------------------------------------
         // RESPONSE
         // ------------------------------------------------------
@@ -246,12 +256,11 @@ const bookProperty = async (req, res) => {
             rental: populatedRental
         });
 
-
     } catch (err) {
 
         console.error(
             'Book/request property error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -259,7 +268,6 @@ const bookProperty = async (req, res) => {
         });
     }
 };
-
 
 // ============================================================
 // GET TENANT RENTALS / REQUESTS
@@ -285,7 +293,6 @@ const getMyRentals = async (req, res) => {
                     'name email phone'
                 );
 
-
         return res.json({
 
             count: rentals.length,
@@ -294,12 +301,11 @@ const getMyRentals = async (req, res) => {
 
         });
 
-
     } catch (err) {
 
         console.error(
             'Get tenant rentals error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -307,7 +313,6 @@ const getMyRentals = async (req, res) => {
         });
     }
 };
-
 
 // ============================================================
 // GET LANDLORD RENTALS / REQUESTS
@@ -333,7 +338,6 @@ const getLandlordRentals = async (req, res) => {
                     'name email phone'
                 );
 
-
         return res.json({
 
             count: rentals.length,
@@ -342,12 +346,11 @@ const getLandlordRentals = async (req, res) => {
 
         });
 
-
     } catch (err) {
 
         console.error(
             'Get landlord rentals error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -355,7 +358,6 @@ const getLandlordRentals = async (req, res) => {
         });
     }
 };
-
 
 // ============================================================
 // GET RENTAL BY ID
@@ -382,7 +384,6 @@ const getRentalById = async (req, res) => {
                     'name email phone'
                 );
 
-
         if (!rental) {
 
             return res.status(404).json({
@@ -390,9 +391,7 @@ const getRentalById = async (req, res) => {
             });
         }
 
-
         const userId = req.user.id;
-
 
         // ------------------------------------------------------
         // ACCESS CHECK
@@ -410,15 +409,13 @@ const getRentalById = async (req, res) => {
             });
         }
 
-
         return res.json(rental);
-
 
     } catch (err) {
 
         console.error(
             'Get rental by ID error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -426,7 +423,6 @@ const getRentalById = async (req, res) => {
         });
     }
 };
-
 
 // ============================================================
 // CANCEL RENTAL
@@ -441,7 +437,6 @@ const cancelRental = async (req, res) => {
                 req.params.id
             );
 
-
         if (!rental) {
 
             return res.status(404).json({
@@ -449,17 +444,13 @@ const cancelRental = async (req, res) => {
             });
         }
 
-
         const userId = req.user.id;
-
 
         const isTenant =
             rental.tenant.toString() === userId;
 
-
         const isLandlord =
             rental.landlord.toString() === userId;
-
 
         if (
             !isTenant &&
@@ -473,7 +464,6 @@ const cancelRental = async (req, res) => {
             });
         }
 
-
         if (
             rental.status === 'cancelled' ||
             rental.status === 'completed'
@@ -485,11 +475,9 @@ const cancelRental = async (req, res) => {
             });
         }
 
-
         rental.status = 'cancelled';
 
         await rental.save();
-
 
         // ------------------------------------------------------
         // MAKE PROPERTY AVAILABLE AGAIN
@@ -510,7 +498,6 @@ const cancelRental = async (req, res) => {
             }
 
         );
-
 
         // ------------------------------------------------------
         // ACTIVITY LOG
@@ -551,7 +538,6 @@ const cancelRental = async (req, res) => {
             status: 'success'
         });
 
-
         return res.json({
 
             message:
@@ -561,12 +547,11 @@ const cancelRental = async (req, res) => {
 
         });
 
-
     } catch (err) {
 
         console.error(
             'Cancel rental error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -575,10 +560,9 @@ const cancelRental = async (req, res) => {
     }
 };
 
-
 // ============================================================
 // UPDATE RENTAL STATUS
-// LANDLORD → ACCEPT / REJECT
+// LANDLORD → ACCEPT / REJECT / COMPLETE
 // ============================================================
 
 const updateRentalStatus = async (req, res) => {
@@ -594,14 +578,12 @@ const updateRentalStatus = async (req, res) => {
                 req.params.id
             );
 
-
         if (!rental) {
 
             return res.status(404).json({
                 message: 'Rental request not found'
             });
         }
-
 
         // ------------------------------------------------------
         // FIND PROPERTY
@@ -612,14 +594,12 @@ const updateRentalStatus = async (req, res) => {
                 rental.property
             );
 
-
         if (!property) {
 
             return res.status(404).json({
                 message: 'Property not found'
             });
         }
-
 
         // ------------------------------------------------------
         // CHECK LANDLORD
@@ -636,13 +616,11 @@ const updateRentalStatus = async (req, res) => {
             });
         }
 
-
         // ------------------------------------------------------
         // GET NEW STATUS
         // ------------------------------------------------------
 
         const { status } = req.body;
-
 
         if (
             ![
@@ -660,61 +638,109 @@ const updateRentalStatus = async (req, res) => {
             });
         }
 
-
         // ======================================================
-        // ACCEPT REQUEST (Landlord accepts)
+        // ACCEPT REQUEST
         // ======================================================
 
         if (status === 'accepted') {
 
             if (rental.status !== 'pending') {
+
                 return res.status(400).json({
-                    message: `This request is already ${rental.status}`
+                    message:
+                        `This request is already ${rental.status}`
                 });
             }
 
-            // Check if there is already an accepted/confirmed request for these dates
-            if (rental.startDate && rental.endDate) {
-                const start = new Date(rental.startDate);
-                const end = new Date(rental.endDate);
-                const clashingRental = await Rental.findOne({
-                    property: property._id,
-                    status: { $in: ['accepted', 'agreement_uploaded', 'agreement_accepted', 'confirmed', 'active'] },
-                    $or: [
-                        { startDate: { $lte: end }, endDate: { $gte: start } }
-                    ]
-                });
+            // --------------------------------------------------
+            // CHECK DATE CLASH
+            // --------------------------------------------------
+
+            if (
+                rental.startDate &&
+                rental.endDate
+            ) {
+
+                const start =
+                    new Date(rental.startDate);
+
+                const end =
+                    new Date(rental.endDate);
+
+                const clashingRental =
+                    await Rental.findOne({
+
+                        property: property._id,
+
+                        _id: {
+                            $ne: rental._id
+                        },
+
+                        status: {
+                            $in: [
+                                'accepted',
+                                'agreement_uploaded',
+                                'agreement_accepted',
+                                'confirmed',
+                                'active'
+                            ]
+                        },
+
+                        $or: [
+                            {
+                                startDate: {
+                                    $lte: end
+                                },
+
+                                endDate: {
+                                    $gte: start
+                                }
+                            }
+                        ]
+                    });
 
                 if (clashingRental) {
+
                     return res.status(400).json({
-                        message: 'You have already accepted a request for these dates'
+
+                        message:
+                            'You have already accepted a request for these dates'
+
                     });
                 }
             }
 
-            // Do NOT mark property as rented yet. Wait until tenant confirms payment.
-            rental.status = 'accepted';
+            // --------------------------------------------------
+            // ACCEPT
+            // --------------------------------------------------
+
+            rental.status =
+                'accepted';
+
             await rental.save();
 
             // --------------------------------------------------
             // ACTIVITY LOG
             // --------------------------------------------------
 
-
             await createActivityLog({
 
                 userId: req.user.id,
 
-                action: 'RENTAL_REQUEST_ACCEPTED',
+                action:
+                    'RENTAL_REQUEST_ACCEPTED',
 
-                module: 'RENTAL',
+                module:
+                    'RENTAL',
 
                 description:
                     `Rental request accepted for property "${property.title}"`,
 
-                targetType: 'Rental',
+                targetType:
+                    'Rental',
 
-                targetId: rental._id,
+                targetId:
+                    rental._id,
 
                 metadata: {
 
@@ -733,9 +759,9 @@ const updateRentalStatus = async (req, res) => {
 
                 req,
 
-                status: 'success'
+                status:
+                    'success'
             });
-
 
             return res.json({
 
@@ -747,52 +773,55 @@ const updateRentalStatus = async (req, res) => {
             });
         }
 
-
         // ======================================================
-        // REJECT REQUEST
+        // ACTIVE
+        // Landlord can activate confirmed rental
         // ======================================================
 
-        if (status === 'cancelled') {
+        if (status === 'active') {
 
-            // --------------------------------------------------
-            // Cannot reject completed rental
-            // --------------------------------------------------
-
-            if (
-                rental.status ===
-                'completed'
-            ) {
+            if (rental.status !== 'confirmed') {
 
                 return res.status(400).json({
+
                     message:
-                        'Completed rental cannot be rejected'
+                        'Only confirmed rentals can be activated'
                 });
             }
 
-
-            rental.status = 'cancelled';
+            rental.status =
+                'active';
 
             await rental.save();
 
+            // --------------------------------------------------
+            // PROPERTY BECOMES RENTED
+            // --------------------------------------------------
 
-            // --------------------------------------------------
-            // Activity log
-            // --------------------------------------------------
+            property.status =
+                'rented';
+
+            await property.save();
 
             await createActivityLog({
 
-                userId: req.user.id,
+                userId:
+                    req.user.id,
 
-                action: 'RENTAL_REQUEST_REJECTED',
+                action:
+                    'RENTAL_ACTIVATED',
 
-                module: 'RENTAL',
+                module:
+                    'RENTAL',
 
                 description:
-                    `Rental request rejected for property "${property.title}"`,
+                    `Rental activated for property "${property.title}"`,
 
-                targetType: 'Rental',
+                targetType:
+                    'Rental',
 
-                targetId: rental._id,
+                targetId:
+                    rental._id,
 
                 metadata: {
 
@@ -808,9 +837,87 @@ const updateRentalStatus = async (req, res) => {
 
                 req,
 
-                status: 'success'
+                status:
+                    'success'
             });
 
+            return res.json({
+
+                message:
+                    'Rental activated successfully',
+
+                rental
+
+            });
+        }
+
+        // ======================================================
+        // REJECT / CANCEL REQUEST
+        // ======================================================
+
+        if (
+            status === 'cancelled' ||
+            status === 'rejected'
+        ) {
+
+            if (
+                rental.status ===
+                'completed'
+            ) {
+
+                return res.status(400).json({
+
+                    message:
+                        'Completed rental cannot be rejected'
+                });
+            }
+
+            rental.status =
+                'cancelled';
+
+            await rental.save();
+
+            // --------------------------------------------------
+            // ACTIVITY LOG
+            // --------------------------------------------------
+
+            await createActivityLog({
+
+                userId:
+                    req.user.id,
+
+                action:
+                    'RENTAL_REQUEST_REJECTED',
+
+                module:
+                    'RENTAL',
+
+                description:
+                    `Rental request rejected for property "${property.title}"`,
+
+                targetType:
+                    'Rental',
+
+                targetId:
+                    rental._id,
+
+                metadata: {
+
+                    propertyId:
+                        property._id,
+
+                    tenantId:
+                        rental.tenant,
+
+                    landlordId:
+                        rental.landlord
+                },
+
+                req,
+
+                status:
+                    'success'
+            });
 
             return res.json({
 
@@ -821,7 +928,6 @@ const updateRentalStatus = async (req, res) => {
 
             });
         }
-
 
         // ======================================================
         // COMPLETE RENTAL
@@ -835,20 +941,19 @@ const updateRentalStatus = async (req, res) => {
             ) {
 
                 return res.status(400).json({
+
                     message:
                         'Only active rentals can be completed'
                 });
             }
-
 
             rental.status =
                 'completed';
 
             await rental.save();
 
-
             // --------------------------------------------------
-            // Property available again
+            // PROPERTY AVAILABLE AGAIN
             // --------------------------------------------------
 
             if (
@@ -862,21 +967,25 @@ const updateRentalStatus = async (req, res) => {
                 await property.save();
             }
 
-
             await createActivityLog({
 
-                userId: req.user.id,
+                userId:
+                    req.user.id,
 
-                action: 'RENTAL_COMPLETED',
+                action:
+                    'RENTAL_COMPLETED',
 
-                module: 'RENTAL',
+                module:
+                    'RENTAL',
 
                 description:
                     `Rental completed for property "${property.title}"`,
 
-                targetType: 'Rental',
+                targetType:
+                    'Rental',
 
-                targetId: rental._id,
+                targetId:
+                    rental._id,
 
                 metadata: {
 
@@ -892,9 +1001,9 @@ const updateRentalStatus = async (req, res) => {
 
                 req,
 
-                status: 'success'
+                status:
+                    'success'
             });
-
 
             return res.json({
 
@@ -906,12 +1015,11 @@ const updateRentalStatus = async (req, res) => {
             });
         }
 
-
     } catch (err) {
 
         console.error(
             'Update rental status error:',
-            err.message
+            err
         );
 
         return res.status(500).json({
@@ -920,123 +1028,392 @@ const updateRentalStatus = async (req, res) => {
     }
 };
 
-
 // ============================================================
 // TENANT ACCEPTS AGREEMENT
 // ============================================================
+
 const acceptAgreement = async (req, res) => {
+
     try {
-        const rental = await Rental.findById(req.params.id);
-        if (!rental) return res.status(404).json({ message: 'Rental not found' });
-        
-        if (rental.tenant.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Only the tenant can accept the agreement' });
+
+        const rental =
+            await Rental.findById(
+                req.params.id
+            );
+
+        if (!rental) {
+
+            return res.status(404).json({
+                message: 'Rental not found'
+            });
         }
 
-        if (rental.status !== 'agreement_uploaded') {
-            return res.status(400).json({ message: `Cannot accept agreement in ${rental.status} status` });
+        // ------------------------------------------------------
+        // CHECK TENANT
+        // ------------------------------------------------------
+
+        if (
+            rental.tenant.toString() !==
+            req.user.id
+        ) {
+
+            return res.status(403).json({
+
+                message:
+                    'Only the tenant can accept the agreement'
+
+            });
         }
 
-        rental.status = 'agreement_accepted';
+        // ------------------------------------------------------
+        // CHECK STATUS
+        // ------------------------------------------------------
+
+        if (
+            rental.status !==
+            'agreement_uploaded'
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    `Cannot accept agreement in ${rental.status} status`
+
+            });
+        }
+
+        rental.status =
+            'agreement_accepted';
+
         await rental.save();
 
         await createActivityLog({
-            userId: req.user.id,
-            action: 'AGREEMENT_ACCEPTED',
-            module: 'RENTAL',
-            description: 'Tenant accepted the rental agreement',
-            targetType: 'Rental',
-            targetId: rental._id,
-            metadata: { rentalId: rental._id },
+
+            userId:
+                req.user.id,
+
+            action:
+                'AGREEMENT_ACCEPTED',
+
+            module:
+                'RENTAL',
+
+            description:
+                'Tenant accepted the rental agreement',
+
+            targetType:
+                'Rental',
+
+            targetId:
+                rental._id,
+
+            metadata: {
+
+                rentalId:
+                    rental._id
+            },
+
             req,
-            status: 'success'
+
+            status:
+                'success'
         });
 
-        return res.json({ message: 'Agreement accepted successfully', rental });
+        return res.json({
+
+            message:
+                'Agreement accepted successfully',
+
+            rental
+
+        });
+
     } catch (err) {
-        console.error('Accept agreement error:', err);
-        return res.status(500).json({ message: 'Server error' });
+
+        console.error(
+            'Accept agreement error:',
+            err
+        );
+
+        return res.status(500).json({
+            message: 'Server error'
+        });
     }
 };
 
 // ============================================================
-// TENANT CONFIRMS BOOKING (Payment)
+// TENANT CONFIRMS BOOKING
+// PAYMENT / FINAL CONFIRMATION
 // ============================================================
+
 const confirmBooking = async (req, res) => {
+
     try {
-        const rental = await Rental.findById(req.params.id);
-        if (!rental) return res.status(404).json({ message: 'Rental not found' });
-        
-        if (rental.tenant.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Only the tenant can confirm the booking' });
+
+        const rental =
+            await Rental.findById(
+                req.params.id
+            );
+
+        if (!rental) {
+
+            return res.status(404).json({
+                message: 'Rental not found'
+            });
         }
 
-        if (rental.status !== 'agreement_accepted') {
-            return res.status(400).json({ message: `Cannot confirm booking in ${rental.status} status` });
+        // ------------------------------------------------------
+        // CHECK TENANT
+        // ------------------------------------------------------
+
+        if (
+            rental.tenant.toString() !==
+            req.user.id
+        ) {
+
+            return res.status(403).json({
+
+                message:
+                    'Only the tenant can confirm the booking'
+
+            });
         }
 
-        const property = await Property.findById(rental.property);
+        // ------------------------------------------------------
+        // CHECK AGREEMENT STATUS
+        // ------------------------------------------------------
 
-        // Check clashes one more time
-        const start = new Date(rental.startDate);
-        const end = new Date(rental.endDate);
-        const clashingRental = await Rental.findOne({
-            property: property._id,
-            status: { $in: ['confirmed', 'active'] },
-            $or: [
-                { startDate: { $lte: end }, endDate: { $gte: start } }
-            ]
-        });
+        if (
+            rental.status !==
+            'agreement_accepted'
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    `Cannot confirm booking in ${rental.status} status`
+
+            });
+        }
+
+        // ------------------------------------------------------
+        // FIND PROPERTY
+        // ------------------------------------------------------
+
+        const property =
+            await Property.findById(
+                rental.property
+            );
+
+        if (!property) {
+
+            return res.status(404).json({
+                message: 'Property not found'
+            });
+        }
+
+        // ------------------------------------------------------
+        // CHECK REQUIRED DATES
+        // ------------------------------------------------------
+
+        if (
+            !rental.startDate ||
+            !rental.endDate
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    'Rental start and end dates are required'
+
+            });
+        }
+
+        const start =
+            new Date(rental.startDate);
+
+        const end =
+            new Date(rental.endDate);
+
+        // ------------------------------------------------------
+        // CHECK DATE CLASH
+        // ------------------------------------------------------
+
+        const clashingRental =
+            await Rental.findOne({
+
+                property:
+                    property._id,
+
+                _id: {
+                    $ne: rental._id
+                },
+
+                status: {
+                    $in: [
+                        'confirmed',
+                        'active'
+                    ]
+                },
+
+                $or: [
+                    {
+                        startDate: {
+                            $lte: end
+                        },
+
+                        endDate: {
+                            $gte: start
+                        }
+                    }
+                ]
+            });
 
         if (clashingRental) {
-            return res.status(400).json({ message: 'Property is already booked and confirmed for these dates' });
+
+            return res.status(400).json({
+
+                message:
+                    'Property is already booked and confirmed for these dates'
+
+            });
         }
 
-        rental.status = 'confirmed';
+        // ------------------------------------------------------
+        // CONFIRM BOOKING
+        // ------------------------------------------------------
+
+        rental.status =
+            'confirmed';
+
         await rental.save();
 
-        // Reject other pending/accepted requests that clash with these dates
+        // ------------------------------------------------------
+        // CANCEL OTHER CLASHING REQUESTS
+        // ------------------------------------------------------
+
         await Rental.updateMany(
+
             {
-                property: rental.property,
-                _id: { $ne: rental._id },
-                status: { $in: ['pending', 'accepted', 'agreement_uploaded', 'agreement_accepted'] },
+
+                property:
+                    rental.property,
+
+                _id: {
+                    $ne: rental._id
+                },
+
+                status: {
+                    $in: [
+                        'pending',
+                        'accepted',
+                        'agreement_uploaded',
+                        'agreement_accepted'
+                    ]
+                },
+
                 $or: [
-                    { startDate: { $lte: end }, endDate: { $gte: start } }
+                    {
+                        startDate: {
+                            $lte: end
+                        },
+
+                        endDate: {
+                            $gte: start
+                        }
+                    }
                 ]
             },
-            { $set: { status: 'cancelled' } }
+
+            {
+                $set: {
+                    status: 'cancelled'
+                }
+            }
+
         );
 
+        // ------------------------------------------------------
+        // ACTIVITY LOG
+        // ------------------------------------------------------
+
         await createActivityLog({
-            userId: req.user.id,
-            action: 'BOOKING_CONFIRMED',
-            module: 'RENTAL',
-            description: 'Tenant confirmed the booking',
-            targetType: 'Rental',
-            targetId: rental._id,
-            metadata: { rentalId: rental._id },
+
+            userId:
+                req.user.id,
+
+            action:
+                'BOOKING_CONFIRMED',
+
+            module:
+                'RENTAL',
+
+            description:
+                'Tenant confirmed the booking',
+
+            targetType:
+                'Rental',
+
+            targetId:
+                rental._id,
+
+            metadata: {
+
+                rentalId:
+                    rental._id,
+
+                propertyId:
+                    rental.property
+            },
+
             req,
-            status: 'success'
+
+            status:
+                'success'
         });
 
-        return res.json({ message: 'Booking confirmed successfully', rental });
+        return res.json({
+
+            message:
+                'Booking confirmed successfully',
+
+            rental
+
+        });
+
     } catch (err) {
-        console.error('Confirm booking error:', err);
-        return res.status(500).json({ message: 'Server error' });
+
+        console.error(
+            'Confirm booking error:',
+            err
+        );
+
+        return res.status(500).json({
+            message: 'Server error'
+        });
     }
 };
 
 // ============================================================
 // EXPORTS
 // ============================================================
+
 module.exports = {
+
     bookProperty,
+
     getMyRentals,
+
     getLandlordRentals,
+
     getRentalById,
+
     cancelRental,
+
     updateRentalStatus,
+
     acceptAgreement,
+
     confirmBooking
+
 };
