@@ -28,8 +28,9 @@ const paymentSchema = new mongoose.Schema(
 
         amount: {
             type: Number,
-            required: true,
-            min: 0
+            required: [true, 'Payment amount is required'],
+            min: [1, 'Amount must be at least 1'],
+            max: [10000000, 'Amount cannot exceed 10,000,000']
         },
 
         currency: {
