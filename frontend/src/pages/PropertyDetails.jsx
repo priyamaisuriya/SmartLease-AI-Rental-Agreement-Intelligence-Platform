@@ -554,11 +554,11 @@ const PropertyDetails = () => {
       // --------------------------------------------------------
 
       if (
-        rental.status !== 'agreement_accepted' && rental.status !== 'accepted'
+        rental.status !== 'agreement_accepted' && rental.status !== 'active'
       ) {
 
         setPaymentMessage(
-          'Payment is available only after landlord approval.'
+          'Payment is available only after you accept the agreement.'
         );
 
         return;
@@ -1685,7 +1685,7 @@ const PropertyDetails = () => {
 
               {property.status === 'available' &&
                 !rentalLoading &&
-                !rental && (
+                (!rental || rental.status === 'cancelled' || rental.status === 'rejected') && (
 
                   <div className="border-t border-gray-200 pt-5 mb-5">
 
@@ -1825,7 +1825,7 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : (rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted') &&
+              ) : (rental?.status === 'active' || rental?.status === 'agreement_accepted') &&
                 payment?.paymentStatus !== 'paid' ? (
 
                 <button
@@ -1870,23 +1870,26 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : (rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted') &&
+              ) : (rental?.status === 'active' || rental?.status === 'agreement_accepted') &&
                 payment?.paymentStatus === 'paid' ? (
 
-                <button
-                  onClick={() =>
-                    navigate('/agreements')
-                  }
-                  className="w-full py-3 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2"
-                >
-
-                  <CheckCircle
-                    size={18}
-                  />
-
-                  Continue to Agreement
-
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => navigate('/agreements')}
+                    className="w-full py-3 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={18} />
+                    Continue to Agreement
+                  </button>
+                  {payment?.invoiceUrl && (
+                    <button
+                      onClick={() => window.open(payment.invoiceUrl, '_blank')}
+                      className="w-full py-3 rounded-xl border border-gray-300 text-ink bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
+                    >
+                      Download Invoice
+                    </button>
+                  )}
+                </div>
 
               ) : property.status === 'available' ? (
 
@@ -1920,8 +1923,10 @@ const PropertyDetails = () => {
 
               <p className="text-xs text-ink-muted text-center mt-4">
 
-                {(rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted')
+                {(rental?.status === 'active' || rental?.status === 'agreement_accepted')
                   ? 'Payment is required to complete your booking.'
+                  : (rental?.status === 'accepted' || rental?.status === 'agreement_uploaded')
+                  ? 'Please review and accept the official agreement from the landlord before paying.'
                   : 'Your request will be sent to the landlord for approval. Payment is available only after approval.'}
 
               </p>

@@ -644,7 +644,7 @@ const updateRentalStatus = async (req, res) => {
 
         if (status === 'accepted') {
 
-            if (rental.status !== 'pending') {
+            if (rental.status !== 'pending' && rental.status !== 'cancelled') {
 
                 return res.status(400).json({
                     message:
