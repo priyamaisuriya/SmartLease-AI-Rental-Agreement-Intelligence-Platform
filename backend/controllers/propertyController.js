@@ -82,15 +82,14 @@ const createProperty = async (req, res) => {
         // DRAFT AGREEMENT VALIDATION
         // --------------------------------------------------------
 
+        // Draft agreement is optional, can rely on text conditions
+        let hasDraftAgreement = false;
         if (
-            !req.files ||
-            !req.files.draftAgreement ||
-            req.files.draftAgreement.length === 0
+            req.files &&
+            req.files.draftAgreement &&
+            req.files.draftAgreement.length > 0
         ) {
-            return res.status(400).json({
-                message:
-                    'A draft agreement document is required to list a property.'
-            });
+            hasDraftAgreement = true;
         }
 
 
@@ -155,51 +154,53 @@ const createProperty = async (req, res) => {
         // CREATE DRAFT AGREEMENT
         // --------------------------------------------------------
 
-        const draftFile = req.files.draftAgreement[0];
+        if (hasDraftAgreement) {
+            const draftFile = req.files.draftAgreement[0];
 
-        let fileType = 'pdf';
+            let fileType = 'pdf';
 
-        const originalName =
-            draftFile.originalname.toLowerCase();
+            const originalName =
+                draftFile.originalname.toLowerCase();
 
-        if (originalName.endsWith('.doc')) {
-            fileType = 'doc';
+            if (originalName.endsWith('.doc')) {
+                fileType = 'doc';
+            }
+
+            if (originalName.endsWith('.docx')) {
+                fileType = 'docx';
+            }
+
+
+            const draftAgreement = await Agreement.create({
+
+                property: property._id,
+
+                landlord: req.user.id,
+
+                title: `Draft Agreement - ${property.title}`,
+
+                originalFileName:
+                    draftFile.originalname,
+
+                fileUrl:
+                    `/uploads/properties/${draftFile.filename}`,
+
+                fileType,
+
+                status: 'draft'
+
+            });
+
+
+            // --------------------------------------------------------
+            // LINK AGREEMENT TO PROPERTY
+            // --------------------------------------------------------
+
+            property.draftAgreement =
+                draftAgreement._id;
+
+            await property.save();
         }
-
-        if (originalName.endsWith('.docx')) {
-            fileType = 'docx';
-        }
-
-
-        const draftAgreement = await Agreement.create({
-
-            property: property._id,
-
-            landlord: req.user.id,
-
-            title: `Draft Agreement - ${property.title}`,
-
-            originalFileName:
-                draftFile.originalname,
-
-            fileUrl:
-                `/uploads/properties/${draftFile.filename}`,
-
-            fileType,
-
-            status: 'draft'
-
-        });
-
-
-        // --------------------------------------------------------
-        // LINK AGREEMENT TO PROPERTY
-        // --------------------------------------------------------
-
-        property.draftAgreement =
-            draftAgreement._id;
-
-        await property.save();
 
 
         // --------------------------------------------------------

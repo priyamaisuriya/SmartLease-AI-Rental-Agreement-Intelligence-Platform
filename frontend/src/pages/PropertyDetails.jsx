@@ -554,11 +554,11 @@ const PropertyDetails = () => {
       // --------------------------------------------------------
 
       if (
-        rental.status !== 'agreement_accepted'
+        rental.status !== 'agreement_accepted' && rental.status !== 'accepted'
       ) {
 
         setPaymentMessage(
-          'Payment is available only after you accept the agreement.'
+          'Payment is available only after landlord approval.'
         );
 
         return;
@@ -1825,7 +1825,7 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : rental?.status === 'active' &&
+              ) : (rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted') &&
                 payment?.paymentStatus !== 'paid' ? (
 
                 <button
@@ -1870,7 +1870,7 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : rental?.status === 'active' &&
+              ) : (rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted') &&
                 payment?.paymentStatus === 'paid' ? (
 
                 <button
@@ -1920,8 +1920,8 @@ const PropertyDetails = () => {
 
               <p className="text-xs text-ink-muted text-center mt-4">
 
-                {rental?.status === 'active'
-                  ? 'Payment is required after landlord approval.'
+                {(rental?.status === 'active' || rental?.status === 'accepted' || rental?.status === 'agreement_accepted')
+                  ? 'Payment is required to complete your booking.'
                   : 'Your request will be sent to the landlord for approval. Payment is available only after approval.'}
 
               </p>
