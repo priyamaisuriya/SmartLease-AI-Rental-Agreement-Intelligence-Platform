@@ -554,11 +554,11 @@ const PropertyDetails = () => {
       // --------------------------------------------------------
 
       if (
-        rental.status !== 'active'
+        rental.status !== 'agreement_accepted'
       ) {
 
         setPaymentMessage(
-          'Payment is available only after landlord approval.'
+          'Payment is available only after you accept the agreement.'
         );
 
         return;
