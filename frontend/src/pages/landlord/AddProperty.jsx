@@ -563,6 +563,10 @@ const AddProperty = () => {
        }
     });
 
+    if (formData.draftAgreement) {
+      formDataObj.append('draftAgreement', formData.draftAgreement);
+    }
+
     return formDataObj;
   };
 
