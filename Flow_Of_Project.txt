@@ -15,3 +15,15 @@ SO check whole project n do this complete flow  after successfull register n log
 SO kindly make this
 
 Add validations in whole project on client side n server side in whole project keep min n max.. Think it like a Big Professional project n do all vaklidations n complete the project do all pending changes in my project
+
+
+Name     : System Admin
+Email    : admin.smartlease.test@example.com
+Password : Admin@2026Test
+Role     : admin
+---------------------
+
+db.users.updateOne(
+  { _id: ObjectId('6ac70a21c21d2c1fabda8e79') },
+  { $set: { email: 'keham5893@gmail.com' } }
+)

@@ -33,7 +33,7 @@ const seedAdmin = async () => {
             email: "admin.smartlease.test@example.com",
             password: hashedPassword,
             role: "admin",
-            phone: "+91 90000 40001",
+            phone: "9000040001",
             isActive: true,
             emailVerified: true,
             profileImage: "",
