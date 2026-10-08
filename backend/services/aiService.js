@@ -303,7 +303,6 @@ ${conditionsText}
     return generateAIResponse(prompt);
 };
 
-
 module.exports = {
     generateAgreementSummary,
     explainClause,
@@ -311,4 +310,3 @@ module.exports = {
     answerAgreementQuestion,
     analyzePropertyConditions
 };
-
