@@ -708,8 +708,8 @@ router.post(
       });
 
       if (!user) {
-        return res.status(200).json({
-          message: 'If an account exists with this email, an OTP has been sent.'
+        return res.status(404).json({
+          message: 'No account found with this email address.'
         });
       }
 
