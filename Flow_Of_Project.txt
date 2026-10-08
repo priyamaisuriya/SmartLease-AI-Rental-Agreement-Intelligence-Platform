@@ -27,3 +27,61 @@ db.users.updateOne(
   { _id: ObjectId('6ac70a21c21d2c1fabda8e79') },
   { $set: { email: 'keham5893@gmail.com' } }
 )
+
+
+
+
+1. Luxury Apartment (Fully Furnished)
+This is great for testing a premium, high-rent property.
+
+Property Name: Skyline Residency 3BHK
+Property Type: Apartment
+Bedrooms: 3
+Built-up Area: 1850 sq.ft
+Furnishing: Furnished
+Monthly Rent: ₹ 45,000
+Security Deposit: ₹ 1,35,000
+Address: Flat 402, Skyline Residency, SG Highway
+Landmark: Near Iskcon Cross Road
+City: Ahmedabad
+State: Gujarat
+Pincode: 380015
+Amenities: Parking, AC, Lift, Security 24x7, Balcony, Gym, Swimming Pool
+Description: A luxurious, fully-furnished 3BHK apartment located in the heart of the city. Features premium Italian marble flooring, a modular kitchen with all appliances, and a beautiful balcony view.
+Conditions: No pets allowed. Minimum lock-in period is 6 months. Maintenance charges are included in the rent.
+2. Standard Independent House (Semi-Furnished)
+This is good for testing standard family housing.
+
+Property Name: Green Villa Homes
+Property Type: Independent House (or Villa)
+Bedrooms: 2
+Built-up Area: 1200 sq.ft
+Furnishing: Semi_furnished
+Monthly Rent: ₹ 22,000
+Security Deposit: ₹ 50,000
+Address: Plot 14, Green Valley Society, Wakad
+Landmark: Behind Datta Mandir
+City: Pune
+State: Maharashtra
+Pincode: 411057
+Amenities: Parking, Water Supply, Power Backup
+Description: A spacious independent house perfect for a small family. Comes with built-in wardrobes, basic electrical fittings, and a private covered parking space. Safe and quiet neighborhood.
+Conditions: Family tenants preferred. 1 month notice period required before vacating.
+3. Commercial Studio / Shop (Unfurnished)
+This helps test non-residential types and lower bedroom counts.
+
+Property Name: Prime Plaza Retail Space
+Property Type: Shop
+Bedrooms: 0
+Built-up Area: 450 sq.ft
+Furnishing: Unfurnished
+Monthly Rent: ₹ 18,000
+Security Deposit: ₹ 60,000
+Address: Shop No. 12, Ground Floor, Prime Plaza
+Landmark: Opp. Central Metro Station
+City: Bengaluru
+State: Karnataka
+Pincode: 560001
+Amenities: Security 24x7, Power Backup
+Description: Prime commercial shop space facing the main road. Heavy footfall area, ideal for a boutique, clinic, or small grocery store. Comes with a private washroom.
+Conditions: Commercial use only. Shop cannot be used for heavy cooking or industrial work. Electricity bill to be paid directly by the tenant.
