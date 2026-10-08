@@ -1,20 +1,2315 @@
-I want to keep flow like :
-Landlord add property along with some common agreements/conditions/ or anything
-so when tenant book that property they can get to know property after reading that property conditions than only tenant can request that property 
-After that request if landloard accept that property then landlord will upload agreement between them 
-and after tenant accept that agreement then only payment option will be done and after successfull payment tenant can confirm that booking.. 
-And till rental request is confirmed other tenant logins can view n request that booking.
-And if rental request is confirmed then also show property to tenant but allow to request that property for that same dates..
-And if there is multiple request of booking is there n admin has accepted booking for that date then don't allow to accept other tenant request for that same date request..
-Keep dates criteria that it can not be clashed..
-And for AI keep agreement analysis using AI n conditions analysis using AI will be 
-AI chat will be also added which will have options of uploading pdf or doc for AI chat so chat can be done on that uploaded doc/pdf.
-Check notifications n reports accordingly.
+# SMARTLEASE — COMPLETE PROJECT IMPLEMENTATION & PROFESSIONAL RENTAL WORKFLOW
 
-SO check whole project n do this complete flow  after successfull register n login 
-SO kindly make this
+You are working on my existing **SmartLease** project.
 
-Add validations in whole project on client side n server side in whole project keep min n max.. Think it like a Big Professional project n do all vaklidations n complete the project do all pending changes in my project
+SmartLease is a **MERN-stack property rental platform** with different user roles such as **Tenant, Landlord, and Admin**.
+
+I want you to work on the **existing project**, not create a separate demo or rewrite the application from scratch.
+
+Your responsibility is to:
+
+1. First understand the entire existing project.
+2. Identify all existing modules, pages, APIs, models, controllers, services, middleware, components, validations, notifications, reports, AI functionality, payment functionality, authentication and authorization.
+3. Identify incomplete, inconsistent, duplicated, broken or missing functionality.
+4. Then implement the complete professional rental workflow described below.
+5. Preserve all useful existing functionality unless it conflicts with the new workflow.
+6. Do not remove existing features simply to make implementation easier.
+7. Maintain the existing project's design language and architecture where practical.
+8. Make the application production-quality with proper client-side AND server-side validation.
+9. Do not implement only the frontend. Every important business rule must also be enforced by the backend.
+10. Do not trust frontend validation for security or booking integrity.
+
+---
+
+# 1. FIRST — ANALYZE THE EXISTING PROJECT
+
+Before modifying code:
+
+### Analyze the complete project structure
+
+Inspect:
+
+* Frontend
+* Backend
+* MongoDB/Mongoose models
+* Routes
+* Controllers
+* Services
+* Middleware
+* Authentication
+* Authorization
+* User roles
+* Property module
+* Rental/request module
+* Booking module
+* Payment module
+* Agreement module
+* Notification module
+* Reports
+* Admin panel
+* AI functionality
+* File upload functionality
+* Search/filter functionality
+* Dashboard
+* Existing validations
+* Existing date handling
+* Existing status fields
+* Existing database relationships
+
+Determine:
+
+* What is already implemented?
+* What is partially implemented?
+* What is missing?
+* Which existing models can be reused?
+* Which models need modification?
+* Which APIs need modification?
+* Which frontend pages need modification?
+* Which APIs are duplicated?
+* Which statuses are inconsistent?
+* Which validations are missing?
+* Which business rules are currently enforced only on the client?
+* Which features are currently disconnected from each other?
+
+Do not blindly duplicate existing functionality.
+
+Create a coherent architecture around the complete rental lifecycle.
+
+---
+
+# 2. CORE SMARTLEASE RENTAL FLOW
+
+The main rental workflow must become:
+
+```text
+Landlord registers/logs in
+        ↓
+Landlord adds property
+        ↓
+Landlord defines property information
+        ↓
+Landlord defines rental conditions / common agreements
+        ↓
+Property becomes available for tenants
+        ↓
+Tenant searches property
+        ↓
+Tenant opens property details
+        ↓
+Tenant reads property conditions
+        ↓
+Tenant can use AI to understand/analyze conditions
+        ↓
+Tenant selects rental start date + end date
+        ↓
+System validates dates
+        ↓
+Tenant submits rental request
+        ↓
+Landlord receives notification
+        ↓
+Landlord reviews request
+        ↓
+Landlord ACCEPTS or REJECTS
+        ↓
+If REJECTED
+    → Tenant is notified
+    → Tenant can choose dates again
+    → Tenant can submit another request
+        ↓
+If ACCEPTED
+        ↓
+Landlord uploads/generates rental agreement
+        ↓
+Tenant receives agreement notification
+        ↓
+Tenant views/downloads agreement
+        ↓
+AI Agreement Analysis available
+        ↓
+Tenant ACCEPTS agreement
+        ↓
+Payment becomes available
+        ↓
+Tenant makes payment
+        ↓
+Payment succeeds
+        ↓
+Booking confirmation becomes available
+        ↓
+Tenant confirms booking
+        ↓
+Rental/Booking becomes CONFIRMED
+        ↓
+Property is unavailable for overlapping dates
+        ↓
+Invoice becomes available
+```
+
+This must be implemented as a proper state-based workflow.
+
+---
+
+# 3. PROPERTY CREATION — LANDLORD
+
+When a landlord creates a property, collect all required property information.
+
+Existing useful fields should be preserved.
+
+Property information may include:
+
+* Property title
+* Description
+* Property type
+* BHK/type
+* Address
+* City
+* State
+* Area
+* Rent
+* Security deposit if applicable
+* Amenities
+* Images
+* Availability information
+* Rental conditions
+* House rules
+* Common agreement clauses
+* Additional notes
+* Minimum rental duration
+* Maximum rental duration if applicable
+
+Do NOT unnecessarily add redundant fields.
+
+For example, do not create confusing duplicate concepts such as:
+
+* Rooms
+* Bedrooms
+* BHK
+* Units
+
+unless they have clearly different business meanings.
+
+Use the project's existing property model where possible.
+
+---
+
+# 4. LANDLORD PROPERTY CONDITIONS
+
+When adding/editing a property, landlord should be able to specify conditions that tenants must know before requesting the property.
+
+Examples:
+
+* No smoking
+* No pets
+* No subletting
+* Maximum occupants
+* Minimum rental period
+* Security deposit rules
+* Maintenance responsibilities
+* Electricity/water charges
+* Notice period
+* Late payment rules
+* Guest rules
+* Property usage restrictions
+* Cancellation conditions
+* Any special landlord-defined conditions
+
+These conditions must be clearly displayed on the property details page.
+
+Tenant must be able to read the conditions BEFORE submitting a rental request.
+
+Add a clear acknowledgement such as:
+
+> "I have read and understood the property conditions."
+
+Tenant should not be able to submit the rental request unless required acknowledgement is completed.
+
+---
+
+# 5. AI CONDITION ANALYSIS
+
+Add AI-powered analysis for property conditions.
+
+The AI should help the tenant understand:
+
+* Important conditions
+* Restrictions
+* Financial obligations
+* Potential additional charges
+* Notice period
+* Cancellation conditions
+* Important warnings
+* Unusual or potentially unfavorable clauses
+* Responsibilities of tenant
+* Responsibilities of landlord
+
+Do NOT make the AI the authority for legal validity.
+
+Display an appropriate disclaimer such as:
+
+> "AI-generated analysis is provided for informational purposes and does not constitute legal advice."
+
+The original landlord conditions must always remain visible.
+
+AI analysis should never modify the original agreement/conditions.
+
+---
+
+# 6. PROPERTY SEARCH
+
+IMPORTANT:
+
+**DO NOT REMOVE PROPERTIES FROM SEARCH merely because they currently have a confirmed booking.**
+
+Search should continue showing properties that may be available for other dates.
+
+For example:
+
+Property A:
+
+```text
+Booked:
+01/11/2026 → 30/11/2026
+```
+
+A tenant searching:
+
+```text
+15/11/2026 → 20/11/2026
+```
+
+must not be allowed to request it.
+
+But a tenant searching:
+
+```text
+01/12/2026 → 15/12/2026
+```
+
+should still be able to see and request it.
+
+Therefore:
+
+### Search visibility ≠ booking availability
+
+Always keep properties visible unless the property itself is inactive/deleted/unlisted according to existing business rules.
+
+Availability must be determined based on requested dates.
+
+---
+
+# 7. RENTAL DATE VALIDATION
+
+Implement strong date validation on BOTH:
+
+### Client side
+
+AND
+
+### Server side
+
+Never rely only on frontend validation.
+
+Rules:
+
+### Start date
+
+The rental start date:
+
+* Cannot be in the past.
+* Cannot be today if the business rule requires bookings to begin from the next valid rental day.
+* Must satisfy the project's minimum advance-booking rule.
+* Must be a valid date.
+* Must be before the end date.
+
+If the current date is:
+
+```text
+10 October
+```
+
+Do not allow:
+
+```text
+09 October
+```
+
+or any earlier date.
+
+Implement the exact minimum start-date rule consistently across frontend and backend.
+
+---
+
+# 8. END DATE VALIDATION
+
+End date:
+
+* Must be valid.
+* Must be after start date.
+* Cannot be before start date.
+* Must satisfy minimum rental duration.
+* Must satisfy maximum rental duration if configured.
+* Must not create an invalid rental period.
+
+Use consistent date handling.
+
+Avoid timezone-related off-by-one-day bugs.
+
+Normalize dates appropriately on the backend.
+
+---
+
+# 9. BOOKED DATE VALIDATION
+
+A tenant must NOT be allowed to request dates that overlap with an already confirmed booking.
+
+Use proper date-overlap logic.
+
+Two rental periods overlap when:
+
+```text
+requestedStart < existingEnd
+AND
+requestedEnd > existingStart
+```
+
+Use the same business rule consistently across:
+
+* Search
+* Property details
+* Rental request API
+* Booking API
+* Payment/confirmation
+* Backend validation
+* Admin actions
+
+Do not rely only on checking whether dates are exactly equal.
+
+Example:
+
+Existing booking:
+
+```text
+10 Nov → 20 Nov
+```
+
+The following must be rejected:
+
+```text
+5 Nov → 12 Nov
+15 Nov → 25 Nov
+10 Nov → 20 Nov
+12 Nov → 18 Nov
+1 Nov → 30 Nov
+```
+
+A non-overlapping period should remain requestable according to the application's boundary-date policy.
+
+---
+
+# 10. MULTIPLE TENANT REQUESTS
+
+Multiple tenants can request the same property for the same dates while the requests are still pending.
+
+Example:
+
+```text
+Tenant A → 1 Dec to 31 Dec → PENDING
+Tenant B → 1 Dec to 31 Dec → PENDING
+Tenant C → 1 Dec to 31 Dec → PENDING
+```
+
+This is allowed.
+
+The property should continue appearing to other tenants.
+
+However, once one request becomes the confirmed booking for those dates:
+
+```text
+Tenant A → CONFIRMED
+```
+
+the system must prevent the other overlapping requests from being accepted/confirmed.
+
+---
+
+# 11. IMPORTANT CONCURRENCY RULE
+
+This is a critical backend requirement.
+
+Suppose:
+
+```text
+Tenant A request → 1 Dec–31 Dec
+Tenant B request → 1 Dec–31 Dec
+```
+
+Both are pending.
+
+Landlord/admin must NOT be able to accept both.
+
+When the first request becomes accepted/confirmed:
+
+```text
+Tenant A → CONFIRMED
+```
+
+then Tenant B's overlapping request must become unavailable for acceptance.
+
+The backend must re-check date availability immediately before accepting/confirming.
+
+Do NOT rely on the state displayed earlier in the UI.
+
+Prevent race conditions as much as reasonably possible using:
+
+* Backend revalidation
+* Atomic/transactional operations where appropriate
+* Database constraints/indexing where practical
+* Status checks
+* Date-overlap checks immediately before confirmation
+
+The server must be the final authority.
+
+---
+
+# 12. RENTAL REQUEST STATUS SYSTEM
+
+Create a clear lifecycle.
+
+Use consistent statuses.
+
+Suggested lifecycle:
+
+```text
+PENDING
+ACCEPTED
+REJECTED
+AGREEMENT_PENDING
+AGREEMENT_ACCEPTED
+PAYMENT_PENDING
+PAYMENT_SUCCESS
+CONFIRMED
+CANCELLED
+EXPIRED
+```
+
+Do not create unnecessary statuses if existing architecture already has equivalent states.
+
+Each transition must have clear rules.
+
+Example:
+
+```text
+PENDING
+   ↓
+ACCEPTED
+   ↓
+AGREEMENT_PENDING
+   ↓
+AGREEMENT_ACCEPTED
+   ↓
+PAYMENT_PENDING
+   ↓
+PAYMENT_SUCCESS
+   ↓
+CONFIRMED
+```
+
+Rejected:
+
+```text
+PENDING → REJECTED
+```
+
+---
+
+# 13. LANDLORD REQUEST MANAGEMENT
+
+Landlord dashboard should contain rental requests.
+
+For every request show:
+
+* Tenant
+* Property
+* Requested start date
+* Requested end date
+* Rent
+* Duration
+* Request date
+* Current status
+* Tenant information allowed by privacy rules
+* Relevant conditions acknowledgement
+* Agreement status
+* Payment status
+
+Landlord actions should be based on request status.
+
+For pending requests:
+
+```text
+Accept
+Reject
+```
+
+Before accepting:
+
+### Backend MUST re-check:
+
+* Property still exists
+* Property is active
+* Request is still pending
+* Tenant is valid
+* Dates are valid
+* Dates are not in the past
+* No confirmed booking overlaps
+* No other accepted/confirmed booking now blocks these dates
+
+If another booking has already taken those dates:
+
+```text
+Do not allow acceptance.
+```
+
+Show a clear message.
+
+---
+
+# 14. REQUEST REJECTION FLOW
+
+If landlord rejects a request:
+
+Tenant should receive:
+
+* Notification
+* Rejection status
+* Reason if landlord provides one
+* Ability to choose new dates
+* Ability to submit another request
+
+The property must remain visible in search.
+
+Do NOT permanently block the tenant.
+
+The tenant should be able to select another date range and submit a new request.
+
+Avoid duplicate active requests for the exact same tenant/property/date range if such duplication is unnecessary.
+
+---
+
+# 15. AGREEMENT FLOW
+
+After landlord accepts a rental request:
+
+The landlord must upload or provide the rental agreement.
+
+Agreement can be:
+
+* PDF
+* DOC/DOCX if supported
+* Other existing supported document format
+
+Store agreement securely.
+
+Agreement should be associated with:
+
+* Property
+* Landlord
+* Tenant
+* Rental request
+* Booking
+* Start date
+* End date
+
+Tenant should receive a notification:
+
+> Rental request accepted. Please review your agreement.
+
+Tenant should be able to:
+
+* View agreement
+* Download agreement where supported
+* Read agreement
+* Use AI agreement analysis
+* Accept agreement
+
+---
+
+# 16. TENANT AGREEMENT ACCEPTANCE
+
+Payment MUST NOT be available before tenant agreement acceptance.
+
+Correct flow:
+
+```text
+Landlord accepts request
+        ↓
+Agreement uploaded
+        ↓
+Tenant reviews agreement
+        ↓
+Tenant accepts agreement
+        ↓
+Payment becomes available
+```
+
+Tenant should explicitly confirm:
+
+> "I have read and agree to the rental agreement."
+
+Store:
+
+* Agreement acceptance timestamp
+* Tenant ID
+* Agreement version
+* Agreement document/reference
+* Relevant audit information
+
+Once accepted, do not silently change the agreement without requiring a new acceptance.
+
+If landlord replaces/modifies the agreement after acceptance, handle it as a new agreement version and require tenant re-acceptance.
+
+---
+
+# 17. AI AGREEMENT ANALYSIS
+
+Add AI analysis for uploaded rental agreements.
+
+AI should identify and explain:
+
+* Rent
+* Deposit
+* Rental period
+* Notice period
+* Cancellation terms
+* Late payment penalties
+* Maintenance responsibilities
+* Utility responsibilities
+* Tenant obligations
+* Landlord obligations
+* Restrictions
+* Renewal terms
+* Termination clauses
+* Potentially unusual clauses
+* Important dates
+* Financial obligations
+* Potential risks/red flags
+
+Provide:
+
+```text
+Summary
+Important Clauses
+Financial Terms
+Tenant Responsibilities
+Landlord Responsibilities
+Warnings / Points to Review
+Important Dates
+```
+
+AI output must not alter the original agreement.
+
+Include a legal disclaimer.
+
+---
+
+# 18. AI CHAT WITH DOCUMENT UPLOAD
+
+Add an AI chat module.
+
+Tenant/user should be able to:
+
+1. Open AI Chat.
+2. Upload PDF/DOC/DOCX where supported.
+3. Have the document processed.
+4. Ask questions about the uploaded document.
+5. Receive answers based on that document.
+6. Continue asking follow-up questions.
+7. Upload another document where appropriate.
+8. Start a new conversation.
+
+Examples:
+
+```text
+"What is the security deposit?"
+"Can the landlord terminate the agreement early?"
+"What is the notice period?"
+"Who pays maintenance?"
+"Summarize this agreement."
+"Are there any penalties?"
+```
+
+AI should prioritize the uploaded document when answering document-specific questions.
+
+If information is not present in the document, the AI should clearly say so instead of inventing information.
+
+Handle:
+
+* File size limits
+* Supported formats
+* Invalid files
+* Empty documents
+* Corrupt files
+* Text extraction failures
+* AI/API failures
+* Token/context limits
+
+Do not expose API keys on the frontend.
+
+---
+
+# 19. PAYMENT FLOW
+
+Payment should ONLY become available after:
+
+```text
+Request accepted
++
+Agreement uploaded
++
+Tenant accepted agreement
+```
+
+Payment must NOT be available when:
+
+* Request is pending
+* Request is rejected
+* Agreement is not uploaded
+* Agreement has not been accepted
+* Dates are invalid
+* Booking has already become unavailable
+
+Payment page should show:
+
+* Property
+* Rental dates
+* Duration
+* Rent
+* Deposit if applicable
+* Other applicable charges
+* Total amount
+* Payment status
+
+Calculate totals on the backend.
+
+Do NOT trust amount values sent from the frontend.
+
+---
+
+# 20. PAYMENT SUCCESS
+
+After successful payment:
+
+Do NOT immediately assume the frontend response is enough.
+
+Backend should verify the payment result using the configured payment provider mechanism.
+
+Store:
+
+* Payment ID
+* Transaction/reference ID
+* Amount
+* Currency
+* Payment date/time
+* Payment status
+* Tenant
+* Landlord
+* Property
+* Rental request
+* Booking reference
+
+Payment must be idempotent.
+
+Do not create duplicate payments/bookings because the user refreshes or clicks twice.
+
+---
+
+# 21. BOOKING CONFIRMATION
+
+After successful payment:
+
+Tenant should be able to confirm the booking.
+
+Flow:
+
+```text
+Payment Successful
+        ↓
+Confirm Booking
+        ↓
+Final availability check
+        ↓
+Booking Confirmed
+```
+
+Before final confirmation, backend MUST perform one final date-overlap check.
+
+If another booking somehow took the dates:
+
+```text
+Do not confirm.
+```
+
+Handle the payment/booking inconsistency safely and show an appropriate message.
+
+---
+
+# 22. INVOICE
+
+After successful payment/confirmed booking:
+
+Display:
+
+```text
+View Invoice
+Download Invoice
+```
+
+If payment has not succeeded:
+
+Do not show a completed invoice.
+
+If payment is successful, replace:
+
+```text
+Book Now
+```
+
+with the appropriate status/action such as:
+
+```text
+Invoice
+```
+
+depending on the current booking state.
+
+Invoice should include:
+
+* Invoice number
+* Tenant
+* Landlord
+* Property
+* Rental dates
+* Rent
+* Deposit
+* Additional charges
+* Total
+* Payment status
+* Payment reference
+* Payment date
+* Booking ID
+* Generated date
+
+Do not allow users to manipulate invoice totals from the frontend.
+
+---
+
+# 23. PROPERTY DETAILS BUTTON STATES
+
+The property page should intelligently change actions according to state.
+
+Examples:
+
+### No request
+
+```text
+Request Property
+```
+
+### Pending request
+
+```text
+Request Pending
+```
+
+### Rejected request
+
+```text
+Request Again
+```
+
+### Accepted / agreement pending
+
+```text
+View Agreement
+```
+
+### Agreement accepted
+
+```text
+Proceed to Payment
+```
+
+### Payment successful
+
+```text
+View Invoice
+```
+
+### Confirmed booking
+
+```text
+Booking Confirmed
+View Booking
+Invoice
+```
+
+### Dates unavailable
+
+```text
+Unavailable for Selected Dates
+Choose Other Dates
+```
+
+Do not simply disable the whole property.
+
+---
+
+# 24. OTHER TENANTS AFTER CONFIRMATION
+
+A confirmed property must STILL appear in property search.
+
+For example:
+
+```text
+Property X
+Booked:
+01 Jan → 31 Jan
+```
+
+Tenant searching:
+
+```text
+10 Jan → 20 Jan
+```
+
+should see:
+
+```text
+Unavailable for selected dates
+```
+
+Tenant searching:
+
+```text
+01 Feb → 28 Feb
+```
+
+should see:
+
+```text
+Available
+Request Property
+```
+
+This is extremely important.
+
+Do not remove confirmed properties from search.
+
+---
+
+# 25. ADMIN ROLE
+
+Review the existing Admin functionality.
+
+Admin should be able to monitor:
+
+### Properties
+
+* Total
+* Active
+* Inactive
+* Pending moderation if existing
+* Reported/problematic properties
+
+### Users
+
+* Landlords
+* Tenants
+* Active/inactive accounts
+
+### Rental Requests
+
+* Pending
+* Accepted
+* Rejected
+* Confirmed
+* Cancelled
+
+### Bookings
+
+* Upcoming
+* Active
+* Completed
+* Cancelled
+
+### Payments
+
+* Successful
+* Failed
+* Pending
+* Refunded if supported
+
+### Agreements
+
+* Uploaded
+* Pending acceptance
+* Accepted
+
+### AI usage
+
+Where appropriate, show useful aggregate information without exposing private document content unnecessarily.
+
+---
+
+# 26. ADMIN BOOKING APPROVAL / ACCEPTANCE
+
+If the existing project has an Admin approval step, preserve and integrate it properly.
+
+If the current business workflow is:
+
+```text
+Tenant Request
+↓
+Landlord Accept
+↓
+Admin Approval
+↓
+Agreement
+↓
+Payment
+↓
+Confirmation
+```
+
+implement that exact flow consistently.
+
+If Admin is not intended to approve individual bookings, do not invent an unnecessary approval stage.
+
+However, whenever Admin accepts/confirms a booking for a date range, the backend must ensure:
+
+```text
+No other overlapping request can subsequently be accepted for those dates.
+```
+
+The database must remain consistent regardless of whether the acceptance comes from landlord or admin.
+
+---
+
+# 27. NOTIFICATIONS
+
+Review the existing notification system and update it for every important state change.
+
+Notifications should exist for:
+
+### Tenant
+
+* Rental request submitted
+* Request accepted
+* Request rejected
+* Agreement uploaded
+* Agreement updated
+* Agreement accepted
+* Payment available
+* Payment successful
+* Payment failed
+* Booking confirmed
+* Booking cancelled
+* Date conflict
+* Request became unavailable
+
+### Landlord
+
+* New rental request
+* Tenant accepted agreement
+* Payment completed
+* Booking confirmed
+* Request conflict
+* Cancellation if applicable
+
+### Admin
+
+* Important booking/request events
+* Payment events if appropriate
+* Reported properties
+* Reported users
+* System issues if applicable
+
+Notifications should include:
+
+* Clear title
+* Useful message
+* Related property/request/booking
+* Timestamp
+* Read/unread status
+* Navigation link where possible
+
+Avoid duplicate notifications.
+
+---
+
+# 28. REPORTS
+
+Review existing reports and make them consistent with the new workflow.
+
+Useful reports may include:
+
+### Admin
+
+* Total properties
+* Total landlords
+* Total tenants
+* Rental requests
+* Confirmed bookings
+* Rejected requests
+* Revenue/payment summary
+* Occupancy/booking statistics
+* Property popularity
+* Booking trends
+
+### Landlord
+
+* Total properties
+* Requests received
+* Accepted requests
+* Rejected requests
+* Confirmed rentals
+* Upcoming rentals
+* Active rentals
+* Revenue/payment summary where applicable
+
+### Tenant
+
+* Requests
+* Accepted requests
+* Rejected requests
+* Current rentals
+* Upcoming bookings
+* Payment history
+* Invoice history
+
+Reports must use actual database data.
+
+Do not show fake/demo statistics.
+
+---
+
+# 29. CLIENT-SIDE VALIDATION
+
+Implement comprehensive frontend validation throughout the entire application.
+
+Validate:
+
+### Authentication
+
+* Name
+* Email
+* Password
+* Confirm password
+* Phone if applicable
+* Role
+* Required fields
+
+### Property
+
+* Required fields
+* Text lengths
+* Numeric ranges
+* Rent minimum/maximum
+* Deposit minimum/maximum
+* Area minimum/maximum
+* Valid property type
+* Image count
+* Image file type
+* Image size
+* Description length
+* Conditions length
+
+### Rental Request
+
+* Start date
+* End date
+* Minimum duration
+* Maximum duration
+* Future date
+* Availability
+* Required acknowledgement
+
+### Agreement
+
+* File type
+* File size
+* Required document
+* Acceptance checkbox
+
+### Payment
+
+* Valid amount
+* Currency
+* Required fields
+* Duplicate submission prevention
+
+### Profile
+
+* Valid email
+* Valid phone
+* Required fields
+* Input length limits
+
+Use clear, user-friendly error messages.
+
+---
+
+# 30. SERVER-SIDE VALIDATION
+
+Every important client validation must also exist on the backend.
+
+Never trust:
+
+* Price
+* User ID
+* Landlord ID
+* Tenant ID
+* Property ID
+* Dates
+* Payment amount
+* Role
+* Booking status
+* Agreement status
+* Permissions
+* Request status
+
+sent by the frontend.
+
+Backend should retrieve trusted information from the database.
+
+Examples:
+
+Do NOT allow:
+
+```text
+Tenant sends landlordId = another landlord
+```
+
+and trust it.
+
+Determine landlord from the authenticated property/request.
+
+Do NOT allow:
+
+```text
+Tenant sends amount = ₹1
+```
+
+when the actual rental amount is ₹20,000.
+
+Calculate the amount on the backend.
+
+Do NOT allow:
+
+```text
+Tenant changes request status to CONFIRMED
+```
+
+through an API request.
+
+Every status transition must be authorized.
+
+---
+
+# 31. MINIMUM AND MAXIMUM LIMITS
+
+Implement sensible min/max limits across the whole application.
+
+Examples:
+
+### Text
+
+* Name min/max
+* Title min/max
+* Description min/max
+* Conditions min/max
+* Address min/max
+
+### Numbers
+
+* Rent minimum/maximum
+* Deposit minimum/maximum
+* Area minimum/maximum
+* Occupancy minimum/maximum
+
+### Files
+
+* Maximum file size
+* Maximum image count
+* Maximum agreement size
+* Maximum AI document size
+
+### Dates
+
+* Start date minimum
+* End date maximum
+* Rental duration minimum
+* Rental duration maximum
+
+### Arrays
+
+* Amenities limit
+* Images limit
+* Conditions limit where applicable
+
+Do not use arbitrary limits that conflict with the application's actual requirements. Define them centrally so they are easy to modify.
+
+---
+
+# 32. SECURITY
+
+Review the complete project for security issues.
+
+Implement/check:
+
+* Authentication
+* Authorization
+* Role-based access
+* JWT/session security according to existing architecture
+* Password hashing
+* Protected routes
+* API authorization
+* Ownership checks
+* File upload validation
+* File type validation
+* File size validation
+* Secure document access
+* Input sanitization
+* MongoDB query safety
+* Rate limiting where appropriate
+* CORS
+* Environment variables
+* API key protection
+* Error handling
+* No sensitive data in frontend
+* No sensitive data in logs
+* No stack traces exposed in production
+
+A tenant must not be able to access another tenant's private agreement or invoice.
+
+A landlord must not be able to modify another landlord's property.
+
+An admin should have only the intended elevated permissions.
+
+---
+
+# 33. FILE UPLOAD SECURITY
+
+For property images and agreements:
+
+Validate on backend:
+
+* MIME type
+* File extension
+* File size
+* File content where practical
+* Number of uploaded files
+
+Do not trust the filename or MIME type from the browser alone.
+
+Store documents securely.
+
+Private agreements should not be publicly accessible merely by knowing a URL.
+
+---
+
+# 34. API DESIGN
+
+Review existing APIs and make them consistent.
+
+Use proper REST-style endpoints where appropriate.
+
+Example conceptual endpoints:
+
+```text
+POST   /properties
+GET    /properties
+GET    /properties/:id
+PUT    /properties/:id
+DELETE /properties/:id
+
+POST   /rental-requests
+GET    /rental-requests
+GET    /rental-requests/:id
+PATCH  /rental-requests/:id/accept
+PATCH  /rental-requests/:id/reject
+
+POST   /rental-requests/:id/agreement
+GET    /rental-requests/:id/agreement
+PATCH  /rental-requests/:id/agreement/accept
+
+POST   /payments
+GET    /payments/:id
+
+POST   /bookings/:id/confirm
+GET    /bookings/:id
+
+GET    /invoices/:id
+GET    /invoices/:id/download
+
+GET    /notifications
+PATCH  /notifications/:id/read
+
+POST   /ai/conditions/analyze
+POST   /ai/agreement/analyze
+POST   /ai/chat
+POST   /ai/chat/upload
+```
+
+Do not blindly create duplicate APIs if equivalent ones already exist.
+
+Follow the project's existing naming conventions.
+
+---
+
+# 35. DATABASE MODEL REVIEW
+
+Review existing Mongoose models.
+
+Ensure relationships between:
+
+```text
+User
+Property
+RentalRequest
+Agreement
+Payment
+Booking
+Invoice
+Notification
+AIConversation
+Document
+```
+
+are consistent.
+
+Use references where appropriate.
+
+Do not duplicate the same information unnecessarily.
+
+Keep audit fields such as:
+
+```text
+createdAt
+updatedAt
+```
+
+and where needed:
+
+```text
+acceptedAt
+rejectedAt
+paymentAt
+confirmedAt
+agreementAcceptedAt
+```
+
+---
+
+# 36. BOOKING DATE INDEXING / PERFORMANCE
+
+Since date-overlap queries can become important, optimize the database queries appropriately.
+
+Review indexes for:
+
+* Property
+* Request status
+* Booking status
+* Start date
+* End date
+* Tenant
+* Landlord
+
+Do not add useless indexes everywhere.
+
+Use efficient queries for checking availability.
+
+---
+
+# 37. STATUS TRANSITION SECURITY
+
+Create one authoritative workflow.
+
+For example:
+
+```text
+PENDING
+→ ACCEPTED
+→ AGREEMENT_PENDING
+→ AGREEMENT_ACCEPTED
+→ PAYMENT_PENDING
+→ PAYMENT_SUCCESS
+→ CONFIRMED
+```
+
+Do not allow:
+
+```text
+PENDING → CONFIRMED
+```
+
+without the required intermediate steps.
+
+Do not allow:
+
+```text
+REJECTED → PAYMENT_SUCCESS
+```
+
+Do not allow:
+
+```text
+PAYMENT_PENDING → CONFIRMED
+```
+
+without successful payment.
+
+Do not allow:
+
+```text
+AGREEMENT_PENDING → PAYMENT
+```
+
+before agreement acceptance.
+
+Enforce these rules on the server.
+
+---
+
+# 38. FRONTEND UX
+
+Make the workflow extremely clear to users.
+
+Use:
+
+* Status badges
+* Progress indicators
+* Confirmation dialogs
+* Loading states
+* Empty states
+* Error states
+* Success messages
+* Disabled buttons during requests
+* Skeleton/loading UI where appropriate
+* Toast notifications where existing design uses them
+
+Never leave the user wondering what the next step is.
+
+For example:
+
+```text
+Rental Request
+✓ Request Submitted
+✓ Landlord Accepted
+✓ Agreement Uploaded
+✓ Agreement Accepted
+● Payment Pending
+○ Booking Confirmation
+```
+
+This would make the workflow very easy to understand.
+
+---
+
+# 39. PREVENT DOUBLE ACTIONS
+
+Prevent users from accidentally performing the same operation multiple times.
+
+Examples:
+
+* Double-clicking Accept
+* Double-clicking Reject
+* Double payment submission
+* Double booking confirmation
+* Duplicate request submission
+* Multiple agreement acceptance submissions
+
+Disable buttons while processing and enforce idempotency/backend validation where appropriate.
+
+---
+
+# 40. ERROR HANDLING
+
+Implement professional error handling.
+
+Errors should be:
+
+* Meaningful
+* User-friendly
+* Secure
+* Consistent
+
+Examples:
+
+Instead of:
+
+```text
+MongoServerError...
+```
+
+show:
+
+```text
+This property is no longer available for the selected dates.
+Please choose another date range.
+```
+
+Log technical details server-side.
+
+Do not expose sensitive internal errors to users.
+
+---
+
+# 41. SEARCH + FILTER IMPROVEMENT
+
+Property search should support the existing filters and should remain compatible with date availability.
+
+Potential filters:
+
+* Location
+* Property type
+* BHK
+* Rent range
+* Amenities
+* Availability dates
+
+When dates are selected:
+
+Do NOT delete unavailable properties from the database or permanently hide them.
+
+Instead, clearly show availability status.
+
+---
+
+# 42. DASHBOARDS
+
+Update dashboards based on the actual rental workflow.
+
+### Tenant dashboard
+
+Show:
+
+```text
+My Requests
+Pending Requests
+Accepted Requests
+Rejected Requests
+Agreements
+Payments
+Upcoming Bookings
+Active Rentals
+Invoices
+Notifications
+AI Conversations
+```
+
+### Landlord dashboard
+
+Show:
+
+```text
+My Properties
+Rental Requests
+Pending Requests
+Accepted Requests
+Agreements
+Upcoming Rentals
+Active Rentals
+Payments
+Notifications
+Reports
+```
+
+### Admin dashboard
+
+Show:
+
+```text
+Users
+Properties
+Requests
+Bookings
+Payments
+Reports
+AI/system monitoring where applicable
+Notifications
+```
+
+---
+
+# 43. TESTING
+
+Do not stop after implementation.
+
+Test the complete workflow.
+
+At minimum test:
+
+### Scenario 1 — Successful booking
+
+```text
+Landlord creates property
+↓
+Tenant searches
+↓
+Tenant reads conditions
+↓
+Tenant requests dates
+↓
+Landlord accepts
+↓
+Agreement uploaded
+↓
+Tenant accepts agreement
+↓
+Payment
+↓
+Payment successful
+↓
+Tenant confirms booking
+↓
+Invoice available
+```
+
+### Scenario 2 — Rejection
+
+```text
+Tenant requests
+↓
+Landlord rejects
+↓
+Tenant receives notification
+↓
+Tenant selects new dates
+↓
+Tenant requests again
+```
+
+### Scenario 3 — Multiple tenants
+
+```text
+Tenant A requests 1–30 Dec
+Tenant B requests 1–30 Dec
+Tenant C requests 1–30 Dec
+
+Landlord accepts A
+↓
+A proceeds toward booking
+↓
+B/C must not be allowed to become confirmed for overlapping dates
+```
+
+### Scenario 4 — Partial overlap
+
+Test:
+
+```text
+Existing: 10–20
+
+Request: 5–12
+Request: 15–25
+Request: 12–18
+Request: 1–30
+```
+
+Ensure the overlap rule is correct.
+
+### Scenario 5 — Different dates
+
+```text
+Existing: 10–20
+
+Request: 21–30
+```
+
+Should be allowed according to the application's boundary-date policy.
+
+### Scenario 6 — Past date
+
+Reject.
+
+### Scenario 7 — Same-day/invalid range
+
+Reject if not allowed by configured rental rules.
+
+### Scenario 8 — Agreement not accepted
+
+Payment must remain unavailable.
+
+### Scenario 9 — Payment failed
+
+Booking must not become confirmed.
+
+### Scenario 10 — Refresh/retry
+
+Refreshing pages must not duplicate:
+
+* Requests
+* Payments
+* Bookings
+* Notifications
+* Agreements
+
+### Scenario 11 — Property already booked
+
+Property remains searchable but unavailable for overlapping dates.
+
+### Scenario 12 — Another tenant books dates while current tenant is viewing
+
+The backend must re-check availability before final acceptance/confirmation.
+
+---
+
+# 44. DO NOT BREAK EXISTING FEATURES
+
+This is very important.
+
+Before modifying any existing feature:
+
+1. Understand what it currently does.
+2. Determine whether it is still required.
+3. Integrate it into the new architecture.
+4. Preserve existing useful functionality.
+
+Do NOT:
+
+* Remove existing modules without reason.
+* Remove working APIs unnecessarily.
+* Remove existing search.
+* Remove properties from the database because they are booked.
+* Remove AI functionality.
+* Remove admin functionality.
+* Remove reports.
+* Remove notifications.
+* Replace working components unnecessarily.
+
+If an existing implementation is poor, improve it rather than blindly deleting it.
+
+---
+
+# 45. CODE QUALITY
+
+Keep the project professional.
+
+Follow:
+
+* Existing folder structure where reasonable
+* Reusable components
+* Reusable services
+* Central validation
+* Central constants
+* Consistent naming
+* Proper error handling
+* Clean API responses
+* DRY principles
+* Separation of concerns
+
+Avoid giant components/controllers.
+
+Move business logic into appropriate services where the architecture supports it.
+
+---
+
+# 46. CENTRALIZE IMPORTANT CONSTANTS
+
+Where appropriate, centralize:
+
+```text
+REQUEST_STATUSES
+BOOKING_STATUSES
+PAYMENT_STATUSES
+AGREEMENT_STATUSES
+USER_ROLES
+PROPERTY_TYPES
+FILE_LIMITS
+DATE_RULES
+RENTAL_LIMITS
+```
+
+Do not hard-code the same values across dozens of files.
+
+---
+
+# 47. AUDIT TRAIL
+
+For important rental lifecycle events, retain useful timestamps/history.
+
+For example:
+
+```text
+Request created
+Request accepted/rejected
+Agreement uploaded
+Agreement accepted
+Payment initiated
+Payment successful
+Booking confirmed
+Booking cancelled
+```
+
+This is important for a professional rental system and future reporting/dispute handling.
+
+---
+
+# 48. IMPORTANT BUSINESS RULE
+
+The property is an entity.
+
+The booking is date-specific.
+
+Therefore:
+
+```text
+Property ≠ permanently booked
+```
+
+Instead:
+
+```text
+Property
+    ├── Booking: 01 Jan → 31 Jan
+    ├── Booking: 01 Mar → 31 Mar
+    └── Available: other valid dates
+```
+
+This concept must be reflected throughout the application.
+
+---
+
+# 49. AI SHOULD BE A SUPPORTING FEATURE
+
+AI must enhance SmartLease, not replace core business rules.
+
+AI can:
+
+* Explain conditions
+* Analyze agreements
+* Summarize documents
+* Answer document questions
+* Highlight important clauses
+
+AI must NOT decide:
+
+* Whether dates are available
+* Whether booking is valid
+* Whether payment succeeded
+* Whether user has permission
+* Whether landlord accepted request
+* Whether booking is confirmed
+
+Those decisions must come from deterministic backend business logic.
+
+---
+
+# 50. FINAL END-TO-END EXPECTED USER EXPERIENCE
+
+After successful registration and login:
+
+## LANDLORD
+
+```text
+Login
+↓
+Dashboard
+↓
+Add Property
+↓
+Add property information
+↓
+Add rental conditions
+↓
+Upload images
+↓
+Publish property
+↓
+Receive tenant request
+↓
+Review request
+↓
+Accept / Reject
+↓
+If accepted → Upload Agreement
+↓
+Wait for tenant acceptance
+↓
+Receive payment
+↓
+Booking confirmed
+↓
+Manage rental
+```
+
+## TENANT
+
+```text
+Register
+↓
+Login
+↓
+Search properties
+↓
+Open property
+↓
+Read property details
+↓
+Read conditions
+↓
+AI condition analysis if required
+↓
+Select valid dates
+↓
+Submit request
+↓
+Wait for landlord
+↓
+If rejected → select new dates and request again
+↓
+If accepted → receive agreement
+↓
+Review agreement
+↓
+AI agreement analysis
+↓
+Accept agreement
+↓
+Payment
+↓
+Payment successful
+↓
+Confirm booking
+↓
+Booking confirmed
+↓
+Invoice available
+```
+
+## ADMIN
+
+```text
+Login
+↓
+Dashboard
+↓
+Manage users
+↓
+Manage properties
+↓
+Monitor requests
+↓
+Monitor bookings
+↓
+Monitor payments
+↓
+Reports
+↓
+Notifications
+↓
+Manage/review system activity
+```
+
+---
+
+# 51. IMPLEMENTATION ORDER
+
+Do not randomly modify files.
+
+Follow this order:
+
+### Phase 1
+
+Analyze complete existing project.
+
+### Phase 2
+
+Fix/standardize database models.
+
+### Phase 3
+
+Implement rental request lifecycle.
+
+### Phase 4
+
+Implement date availability and overlap protection.
+
+### Phase 5
+
+Implement landlord accept/reject flow.
+
+### Phase 6
+
+Implement agreement upload and acceptance.
+
+### Phase 7
+
+Implement AI agreement analysis.
+
+### Phase 8
+
+Implement AI property-condition analysis.
+
+### Phase 9
+
+Implement AI document chat/upload.
+
+### Phase 10
+
+Implement payment lifecycle.
+
+### Phase 11
+
+Implement booking confirmation.
+
+### Phase 12
+
+Implement invoice generation/view/download.
+
+### Phase 13
+
+Update notifications.
+
+### Phase 14
+
+Update reports and dashboards.
+
+### Phase 15
+
+Implement complete client/server validation.
+
+### Phase 16
+
+Implement security and authorization checks.
+
+### Phase 17
+
+Test all workflows and edge cases.
+
+### Phase 18
+
+Fix UI/UX inconsistencies and loading/error states.
+
+### Phase 19
+
+Clean up duplicate/dead code.
+
+### Phase 20
+
+Perform final end-to-end testing.
+
+---
+
+# 52. FINAL ACCEPTANCE CRITERIA
+
+Do NOT consider the task complete merely because the application compiles.
+
+The project is complete only when:
+
+* Registration works.
+* Login works.
+* Role-based access works.
+* Landlord can add properties.
+* Landlord can define conditions.
+* Tenant can search properties.
+* Properties remain visible even when booked for some dates.
+* Tenant can see conditions before requesting.
+* AI condition analysis works.
+* Date validation works on frontend.
+* Date validation works on backend.
+* Past dates cannot be requested.
+* Invalid date ranges cannot be requested.
+* Overlapping confirmed bookings cannot occur.
+* Multiple pending requests can exist.
+* Only one request can ultimately secure overlapping dates.
+* Landlord can accept/reject requests.
+* Rejected tenants can choose new dates and request again.
+* Agreement upload works.
+* Tenant agreement acceptance works.
+* AI agreement analysis works.
+* AI document chat works.
+* Payment only becomes available after agreement acceptance.
+* Payment amount is calculated securely.
+* Payment success is verified.
+* Duplicate payments are prevented.
+* Booking confirmation requires successful payment.
+* Final availability is checked before confirmation.
+* Invoice is generated/available after successful payment.
+* Notifications work for important events.
+* Reports use real database information.
+* Admin functionality works.
+* Authorization prevents unauthorized actions.
+* Private documents are protected.
+* File uploads are validated.
+* Client-side validation works.
+* Server-side validation works.
+* Minimum/maximum limits are enforced.
+* Loading states work.
+* Error states work.
+* Empty states work.
+* Double-click/double-submit problems are handled.
+* Refreshing does not duplicate transactions.
+* Existing useful SmartLease functionality remains intact.
+
+---
+
+# 53. MOST IMPORTANT INSTRUCTION
+
+Think like a **senior full-stack architect building a real production rental platform**, not like someone completing a simple college CRUD project.
+
+Before writing code, understand the existing architecture.
+
+Before changing a model, understand all APIs using it.
+
+Before changing an API, understand all frontend consumers.
+
+Before changing booking logic, understand all date-related functionality.
+
+Before deleting anything, verify that it is genuinely obsolete.
+
+Implement the complete flow across:
+
+```text
+Frontend
++
+Backend
++
+Database
++
+Authentication
++
+Authorization
++
+Validation
++
+AI
++
+File handling
++
+Payments
++
+Bookings
++
+Invoices
++
+Notifications
++
+Reports
++
+Admin
++
+Security
+```
+
+The final result should feel like **one coherent SmartLease platform**, not a collection of disconnected features.
+
+Do not leave TODOs, placeholders, fake data, broken buttons, incomplete API calls, or partially implemented workflows.
+
+If something is ambiguous, first inspect the existing implementation and infer the intended behavior from the existing project before introducing a new architecture.
+
+After implementation, perform a complete end-to-end audit and fix any remaining inconsistencies.
 
 
 Name     : System Admin
@@ -25,7 +2320,7 @@ Role     : admin
 
 db.users.updateOne(
   { _id: ObjectId('6ac70a21c21d2c1fabda8e79') },
-  { $set: { email: 'keham5893@gmail.com' } }
+  { $set: { email: 'abc@gmail.com' } }
 )
 
 
