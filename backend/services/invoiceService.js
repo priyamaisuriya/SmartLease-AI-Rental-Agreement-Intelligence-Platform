@@ -26,381 +26,189 @@ const generateInvoice = async (data) => {
 
     return new Promise((resolve, reject) => {
         try {
-            // =====================================================
-            // INVOICE DIRECTORY
-            // =====================================================
-
-            const invoiceDirectory =
-                path.join(
-                    __dirname,
-                    '../uploads/invoices'
-                );
+            const invoiceDirectory = path.join(__dirname, '../uploads/invoices');
 
             if (!fs.existsSync(invoiceDirectory)) {
-                fs.mkdirSync(
-                    invoiceDirectory,
-                    {
-                        recursive: true
-                    }
-                );
+                fs.mkdirSync(invoiceDirectory, { recursive: true });
             }
 
-            // =====================================================
-            // FILE PATH
-            // =====================================================
+            const fileName = `${invoiceNumber}.pdf`;
+            const filePath = path.join(invoiceDirectory, fileName);
 
-            const fileName =
-                `${invoiceNumber}.pdf`;
-
-            const filePath =
-                path.join(
-                    invoiceDirectory,
-                    fileName
-                );
-
-            // =====================================================
-            // CREATE PDF
-            // =====================================================
-
-            const doc =
-                new PDFDocument({
-                    size: 'A4',
-                    margin: 50
-                });
-
-            const writeStream =
-                fs.createWriteStream(
-                    filePath
-                );
-
+            const doc = new PDFDocument({ size: 'A4', margin: 50 });
+            const writeStream = fs.createWriteStream(filePath);
             doc.pipe(writeStream);
 
             // =====================================================
-            // HEADER
+            // COLORS & FONTS
             // =====================================================
-
-            doc
-                .fontSize(24)
-                .font('Helvetica-Bold')
-                .text(
-                    'SMARTLEASE',
-                    {
-                        align: 'center'
-                    }
-                );
-
-            doc
-                .moveDown(0.3)
-                .fontSize(11)
-                .font('Helvetica')
-                .text(
-                    'AI Rental Agreement Intelligence Platform',
-                    {
-                        align: 'center'
-                    }
-                );
-
-            doc
-                .moveDown(1);
+            const colorPrimary = '#1E3A8A'; // Deep Blue
+            const colorSecondary = '#64748B'; // Slate
+            const colorText = '#334155'; // Dark Slate
+            const colorLight = '#F1F5F9'; // Light Slate
 
             // =====================================================
-            // TITLE
+            // HEADER BAR
             // =====================================================
+            doc.rect(0, 0, 595, 120).fill(colorPrimary);
+            
+            doc.fillColor('#FFFFFF')
+               .fontSize(28)
+               .font('Helvetica-Bold')
+               .text('SMARTLEASE', 50, 45);
+               
+            doc.fontSize(10)
+               .font('Helvetica')
+               .text('AI Rental Agreement Intelligence Platform', 50, 75);
+               
+            doc.fontSize(24)
+               .font('Helvetica-Bold')
+               .text('INVOICE', 400, 45, { align: 'right' });
 
-            doc
-                .fontSize(20)
-                .font('Helvetica-Bold')
-                .text(
-                    'PAYMENT INVOICE',
-                    {
-                        align: 'center'
-                    }
-                );
-
-            doc
-                .moveDown(1);
-
-            // =====================================================
-            // INVOICE INFORMATION
-            // =====================================================
-
-            doc
-                .fontSize(10)
-                .font('Helvetica-Bold')
-                .text(
-                    `Invoice Number: ${invoiceNumber}`
-                );
-
-            doc
-                .font('Helvetica')
-                .text(
-                    `Transaction ID: ${transactionId}`
-                );
-
-            doc
-                .text(
-                    `Invoice Date: ${invoiceDate}`
-                );
-
-            doc
-                .moveDown(1);
+            // Reset fill color for text
+            doc.fillColor(colorText);
 
             // =====================================================
-            // TENANT DETAILS
+            // INVOICE META DATA
             // =====================================================
+            doc.moveDown(4); // Move past the header
+            
+            const metaTop = 150;
+            doc.fontSize(10)
+               .font('Helvetica-Bold')
+               .fillColor(colorSecondary)
+               .text('Invoice Number:', 350, metaTop)
+               .font('Helvetica')
+               .fillColor(colorText)
+               .text(invoiceNumber, 440, metaTop);
 
-            doc
-                .fontSize(13)
-                .font('Helvetica-Bold')
-                .text(
-                    'Tenant Details'
-                );
+            doc.font('Helvetica-Bold')
+               .fillColor(colorSecondary)
+               .text('Date:', 350, metaTop + 15)
+               .font('Helvetica')
+               .fillColor(colorText)
+               .text(new Date(invoiceDate).toLocaleDateString(), 440, metaTop + 15);
 
-            doc
-                .moveDown(0.3)
-                .fontSize(10)
-                .font('Helvetica')
-                .text(
-                    `Name: ${tenantName}`
-                )
-                .text(
-                    `Email: ${tenantEmail}`
-                );
-
-            doc
-                .moveDown(1);
-
-            // =====================================================
-            // PROPERTY DETAILS
-            // =====================================================
-
-            doc
-                .fontSize(13)
-                .font('Helvetica-Bold')
-                .text(
-                    'Property Details'
-                );
-
-            doc
-                .moveDown(0.3)
-                .fontSize(10)
-                .font('Helvetica')
-                .text(
-                    `Property: ${propertyTitle}`
-                )
-                .text(
-                    `Address: ${propertyAddress || 'N/A'}`
-                );
-
-            doc
-                .moveDown(1);
+            doc.font('Helvetica-Bold')
+               .fillColor(colorSecondary)
+               .text('Transaction ID:', 350, metaTop + 30)
+               .font('Helvetica')
+               .fillColor(colorText)
+               .text(transactionId, 440, metaTop + 30);
 
             // =====================================================
-            // PAYMENT DETAILS
+            // BILL TO & PROPERTY INFO
             // =====================================================
+            const detailsTop = 150;
+            
+            // Bill To
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+               .fillColor(colorPrimary)
+               .text('BILLED TO:', 50, detailsTop);
+               
+            doc.fontSize(10)
+               .font('Helvetica-Bold')
+               .fillColor(colorText)
+               .text(tenantName, 50, detailsTop + 20)
+               .font('Helvetica')
+               .text(tenantEmail, 50, detailsTop + 35);
 
-            doc
-                .fontSize(13)
-                .font('Helvetica-Bold')
-                .text(
-                    'Payment Details'
-                );
+            // Property Details
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+               .fillColor(colorPrimary)
+               .text('PROPERTY DETAILS:', 50, detailsTop + 70);
+               
+            doc.fontSize(10)
+               .font('Helvetica-Bold')
+               .fillColor(colorText)
+               .text(propertyTitle, 50, detailsTop + 90)
+               .font('Helvetica')
+               .text(propertyAddress || 'N/A', 50, detailsTop + 105, { width: 250 });
 
-            doc
-                .moveDown(0.5);
+            // =====================================================
+            // TABLE HEADER
+            // =====================================================
+            const tableTop = 320;
+            
+            doc.rect(50, tableTop, 495, 25).fill(colorLight);
+            
+            doc.fillColor(colorPrimary)
+               .font('Helvetica-Bold')
+               .fontSize(10)
+               .text('DESCRIPTION', 60, tableTop + 7)
+               .text('AMOUNT', 420, tableTop + 7, { width: 110, align: 'right' });
 
-            // Table header
-            const tableTop =
-                doc.y;
+            // =====================================================
+            // TABLE ROWS
+            // =====================================================
+            const row1Y = tableTop + 35;
+            doc.fillColor(colorText)
+               .font('Helvetica')
+               .text('First Month Rent', 60, row1Y)
+               .text(`${currency} ${Number(monthlyRent).toLocaleString('en-IN')}`, 420, row1Y, { width: 110, align: 'right' });
+               
+            // Draw a subtle line
+            doc.moveTo(50, row1Y + 20).lineTo(545, row1Y + 20).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
-            doc
-                .fontSize(10)
-                .font('Helvetica-Bold')
-                .text(
-                    'Description',
-                    60,
-                    tableTop
-                );
+            const row2Y = row1Y + 30;
+            doc.text('Security Deposit', 60, row2Y)
+               .text(`${currency} ${Number(securityDeposit).toLocaleString('en-IN')}`, 420, row2Y, { width: 110, align: 'right' });
+               
+            doc.moveTo(50, row2Y + 20).lineTo(545, row2Y + 20).strokeColor('#E2E8F0').lineWidth(1).stroke();
 
-            doc
-                .text(
-                    'Amount',
-                    420,
-                    tableTop
-                );
-
-            doc
-                .moveTo(
-                    60,
-                    tableTop + 18
-                )
-                .lineTo(
-                    535,
-                    tableTop + 18
-                )
-                .stroke();
-
-            // Monthly rent
-            const rentY =
-                tableTop + 30;
-
-            doc
-                .font('Helvetica')
-                .text(
-                    'First Month Rent',
-                    60,
-                    rentY
-                );
-
-            doc
-                .text(
-                    `${currency} ${Number(
-                        monthlyRent
-                    ).toLocaleString('en-IN')}`,
-                    420,
-                    rentY
-                );
-
-            // Security deposit
-            const depositY =
-                rentY + 25;
-
-            doc
-                .text(
-                    'Security Deposit',
-                    60,
-                    depositY
-                );
-
-            doc
-                .text(
-                    `${currency} ${Number(
-                        securityDeposit
-                    ).toLocaleString('en-IN')}`,
-                    420,
-                    depositY
-                );
-
-            // Total line
-            const totalY =
-                depositY + 30;
-
-            doc
-                .moveTo(
-                    60,
-                    totalY - 8
-                )
-                .lineTo(
-                    535,
-                    totalY - 8
-                )
-                .stroke();
-
-            doc
-                .font('Helvetica-Bold')
-                .text(
-                    'Total Paid',
-                    60,
-                    totalY
-                );
-
-            doc
-                .text(
-                    `${currency} ${Number(
-                        totalAmount
-                    ).toLocaleString('en-IN')}`,
-                    420,
-                    totalY
-                );
+            // =====================================================
+            // TOTALS
+            // =====================================================
+            const totalY = row2Y + 40;
+            
+            doc.rect(320, totalY, 225, 30).fill(colorPrimary);
+            
+            doc.fillColor('#FFFFFF')
+               .font('Helvetica-Bold')
+               .fontSize(12)
+               .text('TOTAL PAID:', 330, totalY + 8)
+               .text(`${currency} ${Number(totalAmount).toLocaleString('en-IN')}`, 420, totalY + 8, { width: 115, align: 'right' });
 
             // =====================================================
             // PAYMENT STATUS
             // =====================================================
-
-            doc
-                .moveDown(3);
-
-            doc
-                .fontSize(12)
-                .font('Helvetica-Bold')
-                .text(
-                    'Payment Status: PAID'
-                );
-
-            doc
-                .fontSize(10)
-                .font('Helvetica')
-                .text(
-                    `Payment Method: ${paymentMethod}`
-                );
+            doc.fillColor(colorText)
+               .fontSize(10)
+               .font('Helvetica-Bold')
+               .text('Payment Status:', 50, totalY)
+               .fillColor('#10B981') // Emerald Green
+               .text('SUCCESS (PAID)', 140, totalY);
+               
+            doc.fillColor(colorSecondary)
+               .font('Helvetica')
+               .text(`Payment Method: ${paymentMethod}`, 50, totalY + 15);
 
             // =====================================================
-            // DEMO NOTICE
+            // DEMO NOTICE & FOOTER
             // =====================================================
+            const footerTop = 700;
+            
+            doc.moveTo(50, footerTop).lineTo(545, footerTop).strokeColor(colorPrimary).lineWidth(2).stroke();
+            
+            doc.fillColor(colorSecondary)
+               .fontSize(8)
+               .font('Helvetica-Oblique')
+               .text('Note: This invoice was generated for the SmartLease college project demo. The payment system uses a mock payment gateway and does not represent a real financial transaction.', 50, footerTop + 15, { align: 'center' });
 
-            doc
-                .moveDown(1);
-
-            doc
-                .fontSize(9)
-                .text(
-                    'Note: This invoice was generated for the SmartLease college project demo. The payment system uses a mock payment gateway and does not represent a real financial transaction.',
-                    {
-                        width: 480
-                    }
-                );
-
-            // =====================================================
-            // FOOTER
-            // =====================================================
-
-            doc
-                .moveDown(2);
-
-            doc
-                .fontSize(10)
-                .font('Helvetica-Bold')
-                .text(
-                    'Thank you for using SmartLease.',
-                    {
-                        align: 'center'
-                    }
-                );
-
-            doc
-                .fontSize(8)
-                .font('Helvetica')
-                .text(
-                    'SmartLease AI Rental Agreement Intelligence Platform',
-                    {
-                        align: 'center'
-                    }
-                );
+            doc.fillColor(colorPrimary)
+               .fontSize(10)
+               .font('Helvetica-Bold')
+               .text('Thank you for choosing SmartLease!', 50, footerTop + 45, { align: 'center' });
 
             // =====================================================
             // FINISH PDF
             // =====================================================
-
             doc.end();
 
-            writeStream.on(
-                'finish',
-                () => {
-                    resolve({
-                        invoiceNumber,
-                        fileName,
-                        filePath
-                    });
-                }
-            );
-
-            writeStream.on(
-                'error',
-                (error) => {
-                    reject(error);
-                }
-            );
-
+            writeStream.on('finish', () => resolve({ invoiceNumber, fileName, filePath }));
+            writeStream.on('error', (error) => reject(error));
         } catch (error) {
             reject(error);
         }
