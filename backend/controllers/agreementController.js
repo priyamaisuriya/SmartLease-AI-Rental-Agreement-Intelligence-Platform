@@ -150,8 +150,8 @@ const uploadAgreement = async (req, res) => {
 
         await agreement.save();
 
-        if (rental.status === 'accepted') {
-            rental.status = 'agreement_uploaded';
+        if (['accepted', 'agreement_pending', 'agreement_accepted'].includes(rental.status)) {
+            rental.status = 'agreement_pending';
             await rental.save();
         }
 

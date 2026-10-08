@@ -343,7 +343,7 @@ const getAvailableProperties = async (req, res) => {
 
         const filter = {
 
-            status: 'available',
+            status: { $in: ['available', 'rented'] },
 
             $or: [
 

@@ -468,6 +468,9 @@ const processMockPayment = async (req, res) => {
         payment._id
       );
 
+    } else {
+        rental.status = 'payment_success';
+        await rental.save();
     }
 
 

@@ -83,8 +83,10 @@ const bookProperty = async (req, res) => {
                 $in: [
                     'pending',
                     'accepted',
-                    'agreement_uploaded',
+                    'agreement_pending',
                     'agreement_accepted',
+                    'payment_pending',
+                    'payment_success',
                     'confirmed',
                     'active'
                 ]
@@ -679,8 +681,10 @@ const updateRentalStatus = async (req, res) => {
                         status: {
                             $in: [
                                 'accepted',
-                                'agreement_uploaded',
+                                'agreement_pending',
                                 'agreement_accepted',
+                                'payment_pending',
+                                'payment_success',
                                 'confirmed',
                                 'active'
                             ]
@@ -1071,7 +1075,7 @@ const acceptAgreement = async (req, res) => {
 
         if (
             rental.status !==
-            'agreement_uploaded'
+            'agreement_pending'
         ) {
 
             return res.status(400).json({
@@ -1185,7 +1189,7 @@ const confirmBooking = async (req, res) => {
 
         if (
             rental.status !==
-            'agreement_accepted'
+            'payment_success'
         ) {
 
             return res.status(400).json({
@@ -1307,8 +1311,10 @@ const confirmBooking = async (req, res) => {
                     $in: [
                         'pending',
                         'accepted',
-                        'agreement_uploaded',
-                        'agreement_accepted'
+                        'agreement_pending',
+                        'agreement_accepted',
+                        'payment_pending',
+                        'payment_success'
                     ]
                 },
 

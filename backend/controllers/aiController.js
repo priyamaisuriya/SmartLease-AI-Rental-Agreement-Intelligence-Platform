@@ -6,8 +6,11 @@ const {
     generateAgreementSummary,
     explainClause,
     detectAgreementRisks,
-    answerAgreementQuestion
+    answerAgreementQuestion,
+    analyzePropertyConditions
 } = require('../services/aiService');
+
+const { extractDocumentText } = require('../services/documentService');
 
 const {
     createActivityLog
@@ -808,6 +811,77 @@ const getLatestRisks = async (
     }
 };
 
+// =====================================================
+// PROPERTY CONDITIONS ANALYSIS
+// =====================================================
+const analyzeConditions = async (req, res) => {
+    try {
+        const { conditions } = req.body;
+        if (!conditions) {
+            return res.status(400).json({ message: 'Conditions text is required' });
+        }
+        
+        const analysis = await analyzePropertyConditions(conditions);
+        
+        return res.json({ analysis });
+    } catch (err) {
+        console.error('Analyze conditions error:', err.message);
+        return res.status(500).json({ message: 'Failed to analyze conditions' });
+    }
+};
+
+// =====================================================
+// AI CHAT UPLOAD
+// =====================================================
+const path = require('path');
+
+const uploadChatDocument = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const extension = path
+            .extname(req.file.originalname)
+            .toLowerCase()
+            .replace('.', '');
+
+        const filePath = path.join(
+            __dirname,
+            '../uploads/agreements', // Reusing agreements directory for simplicity
+            req.file.filename
+        );
+
+        const extractedText = await extractDocumentText(filePath, extension);
+
+        return res.json({
+            message: 'Document processed successfully',
+            extractedText
+        });
+    } catch (err) {
+        console.error('Upload chat document error:', err.message);
+        return res.status(500).json({ message: 'Failed to process document' });
+    }
+};
+
+// =====================================================
+// AI CHAT
+// =====================================================
+const chatWithDocument = async (req, res) => {
+    try {
+        const { documentText, question } = req.body;
+        if (!documentText || !question) {
+            return res.status(400).json({ message: 'Document text and question are required' });
+        }
+        
+        const answer = await answerAgreementQuestion(documentText, question);
+        
+        return res.json({ answer });
+    } catch (err) {
+        console.error('Chat error:', err.message);
+        return res.status(500).json({ message: 'Failed to answer question' });
+    }
+};
 
 module.exports = {
     summarizeAgreement,
@@ -816,5 +890,8 @@ module.exports = {
     askAgreementQuestion,
     getAgreementAnalysisHistory,
     getLatestSummary,
-    getLatestRisks
+    getLatestRisks,
+    analyzeConditions,
+    uploadChatDocument,
+    chatWithDocument
 };

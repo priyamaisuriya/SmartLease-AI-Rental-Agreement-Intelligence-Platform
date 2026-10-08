@@ -12,8 +12,12 @@ const {
     askAgreementQuestion,
     getAgreementAnalysisHistory,
     getLatestSummary,
-    getLatestRisks
+    getLatestRisks,
+    analyzeConditions,
+    uploadChatDocument,
+    chatWithDocument
 } = require('../controllers/aiController');
+const upload = require('../middleware/agreementUpload');
 
 
 /*
@@ -96,5 +100,35 @@ router.get(
     getAgreementAnalysisHistory
 );
 
+
+/*
+ * Property Conditions Analysis
+ */
+router.post(
+    '/conditions/analyze',
+    auth,
+    analyzeConditions
+);
+
+
+/*
+ * AI Chat Upload
+ */
+router.post(
+    '/chat/upload',
+    auth,
+    upload.single('document'), // Assuming 'upload' middleware handles 'document' field
+    uploadChatDocument
+);
+
+
+/*
+ * AI Chat with Extracted Document Text
+ */
+router.post(
+    '/chat',
+    auth,
+    chatWithDocument
+);
 
 module.exports = router;

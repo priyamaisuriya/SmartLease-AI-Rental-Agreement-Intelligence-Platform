@@ -270,5 +270,44 @@ module.exports = {
     generateAgreementSummary,
     explainClause,
     detectAgreementRisks,
-    answerAgreementQuestion
+    answerAgreementQuestion,
+    analyzePropertyConditions
+};
+
+// =====================================================
+// PROPERTY CONDITIONS ANALYSIS
+// =====================================================
+
+const analyzePropertyConditions = async (
+    conditionsText
+) => {
+    if (!conditionsText || !conditionsText.trim()) {
+        throw new Error(
+            'Conditions text is empty'
+        );
+    }
+
+    const prompt = `
+You are SmartLease AI.
+
+Analyze the following property rental conditions provided by the landlord.
+Help the tenant understand:
+- Important conditions
+- Restrictions
+- Financial obligations
+- Potential additional charges
+- Notice period
+- Cancellation conditions
+- Important warnings
+- Unusual or potentially unfavorable clauses
+- Responsibilities of tenant and landlord
+
+Do not provide legal advice. Make the analysis clear and concise.
+
+Property Conditions:
+
+${conditionsText}
+`;
+
+    return generateAIResponse(prompt);
 };

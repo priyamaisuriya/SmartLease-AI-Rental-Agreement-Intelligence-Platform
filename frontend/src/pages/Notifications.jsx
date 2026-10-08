@@ -108,6 +108,72 @@ const Notifications = () => {
               rental.property?.name ||
               'your rental property';
 
+            if (rental.status === 'accepted') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-accepted-${rentalId}`,
+                  `Your rental request for ${propertyTitle} has been accepted by the landlord.`,
+                  rental.updatedAt || rental.createdAt,
+                  'rental'
+                )
+              );
+            }
+
+            if (rental.status === 'agreement_pending') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-agreement-pending-${rentalId}`,
+                  `Rental agreement for ${propertyTitle} has been uploaded. Please review and accept.`,
+                  rental.updatedAt || rental.createdAt,
+                  'agreement'
+                )
+              );
+            }
+
+            if (rental.status === 'agreement_accepted') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-agreement-accepted-${rentalId}`,
+                  `You have accepted the agreement for ${propertyTitle}.`,
+                  rental.updatedAt || rental.createdAt,
+                  'agreement'
+                )
+              );
+            }
+            
+            if (rental.status === 'payment_pending') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-payment-pending-${rentalId}`,
+                  `Payment is pending for your rental of ${propertyTitle}.`,
+                  rental.updatedAt || rental.createdAt,
+                  'payment'
+                )
+              );
+            }
+            
+            if (rental.status === 'payment_success') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-payment-success-${rentalId}`,
+                  `Payment was successful for ${propertyTitle}. Please confirm your booking.`,
+                  rental.updatedAt || rental.createdAt,
+                  'payment'
+                )
+              );
+            }
+
+            if (rental.status === 'confirmed') {
+              generatedNotifications.push(
+                createNotification(
+                  `rental-confirmed-${rentalId}`,
+                  `Your booking for ${propertyTitle} is now confirmed.`,
+                  rental.updatedAt || rental.createdAt,
+                  'rental'
+                )
+              );
+            }
+
             if (rental.status === 'active') {
               generatedNotifications.push(
                 createNotification(

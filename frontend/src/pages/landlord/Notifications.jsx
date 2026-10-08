@@ -144,6 +144,78 @@ const Notifications = () => {
           'your property';
 
         if (
+          rental.status === 'pending'
+        ) {
+          generated.push({
+            id: `rental-pending-${rental._id}`,
+            title: `New rental request for "${propertyName}" from ${tenantName}.`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+        
+        if (
+          rental.status === 'agreement_pending'
+        ) {
+          generated.push({
+            id: `rental-agreement-pending-${rental._id}`,
+            title: `Agreement uploaded for "${propertyName}". Waiting for ${tenantName} to accept.`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+
+        if (
+          rental.status === 'agreement_accepted'
+        ) {
+          generated.push({
+            id: `rental-agreement-accepted-${rental._id}`,
+            title: `${tenantName} accepted the agreement for "${propertyName}".`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+        
+        if (
+          rental.status === 'payment_pending'
+        ) {
+          generated.push({
+            id: `rental-payment-pending-${rental._id}`,
+            title: `Waiting for ${tenantName} to make payment for "${propertyName}".`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+        
+        if (
+          rental.status === 'payment_success'
+        ) {
+          generated.push({
+            id: `rental-payment-success-${rental._id}`,
+            title: `${tenantName} successfully made the payment for "${propertyName}".`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+
+        if (
+          rental.status === 'confirmed'
+        ) {
+          generated.push({
+            id: `rental-confirmed-${rental._id}`,
+            title: `Booking confirmed for "${propertyName}" by ${tenantName}.`,
+            date:
+              rental.updatedAt ||
+              rental.createdAt,
+          });
+        }
+
+        if (
           rental.status === 'active'
         ) {
           generated.push({
