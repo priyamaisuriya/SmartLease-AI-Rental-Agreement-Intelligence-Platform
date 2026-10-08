@@ -76,11 +76,11 @@ const createPaymentOrder = async (req, res) => {
     // --------------------------------------------------------
 
     if (
-      rental.status !== 'agreement_accepted'
+      rental.status !== 'agreement_accepted' && rental.status !== 'accepted'
     ) {
 
       return res.status(400).json({
-        message: 'Payment is available only after you accept the agreement.'
+        message: 'Payment is available only after landlord approval.'
       });
 
     }
