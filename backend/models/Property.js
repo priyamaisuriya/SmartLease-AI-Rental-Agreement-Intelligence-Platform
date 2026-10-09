@@ -147,6 +147,18 @@ const PropertySchema = new mongoose.Schema(
             default: null,
         },
 
+        minDuration: {
+            type: Number,
+            min: [1, 'Minimum duration must be at least 1 month'],
+            default: 1
+        },
+
+        maxDuration: {
+            type: Number,
+            min: [1, 'Maximum duration must be at least 1 month'],
+            default: 120
+        },
+
         // -----------------------------
         // PROPERTY STATUS
         // -----------------------------

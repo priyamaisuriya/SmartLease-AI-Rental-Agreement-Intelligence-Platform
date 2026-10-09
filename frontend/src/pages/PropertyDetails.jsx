@@ -150,6 +150,20 @@ const PropertyDetails = () => {
     setEndDate
   ] = useState('');
 
+  // ============================================================
+  // CONDITIONS ANALYSIS
+  // ============================================================
+
+  const [
+    conditionsAnalysis,
+    setConditionsAnalysis
+  ] = useState(null);
+
+  const [
+    isAnalyzingConditions,
+    setIsAnalyzingConditions
+  ] = useState(false);
+
 
   // ============================================================
   // TODAY
@@ -363,6 +377,27 @@ const PropertyDetails = () => {
     }
 
   }, [id]);
+
+
+  // ============================================================
+  // ANALYZE CONDITIONS
+  // ============================================================
+
+  const handleAnalyzeConditions = async () => {
+    if (!property?.conditions) return;
+    
+    try {
+      setIsAnalyzingConditions(true);
+      const response = await api.post('/ai/conditions/analyze', {
+        conditions: property.conditions
+      });
+      setConditionsAnalysis(response.data.analysis);
+    } catch (err) {
+      console.error('Failed to analyze conditions:', err);
+    } finally {
+      setIsAnalyzingConditions(false);
+    }
+  };
 
 
   // ============================================================
@@ -1318,6 +1353,46 @@ const PropertyDetails = () => {
             </div>
 
 
+            {/* RENTAL CONDITIONS */}
+
+            {property.conditions && (
+              <div className="bg-white rounded-2xl p-7 mb-6">
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-xl font-semibold text-ink">
+                    Rental Conditions & Rules
+                  </h2>
+                  <button
+                    onClick={handleAnalyzeConditions}
+                    disabled={isAnalyzingConditions}
+                    className="flex items-center gap-2 text-sm px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors font-medium"
+                  >
+                    {isAnalyzingConditions ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <FileText size={16} />
+                    )}
+                    {isAnalyzingConditions ? 'Analyzing...' : 'AI Analyze'}
+                  </button>
+                </div>
+
+                {conditionsAnalysis ? (
+                  <div className="mb-6 p-5 bg-purple-50 border border-purple-100 rounded-xl">
+                    <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                      <FileText size={16} />
+                      AI Analysis Summary
+                    </h3>
+                    <div className="text-purple-800 text-sm leading-relaxed whitespace-pre-wrap">
+                      {conditionsAnalysis}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="text-ink-muted leading-7 whitespace-pre-wrap">
+                  {property.conditions}
+                </div>
+              </div>
+            )}
+
             {/* LANDLORD */}
 
             <div className="bg-white rounded-2xl p-7">
@@ -1825,8 +1900,28 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : (rental?.status === 'active' || rental?.status === 'agreement_accepted') &&
-                payment?.paymentStatus !== 'paid' ? (
+              ) : rental?.status === 'accepted' ? (
+
+                <button
+                  disabled
+                  className="w-full py-3 rounded-xl bg-blue-500 text-white disabled:opacity-80"
+                >
+
+                  Waiting for Agreement
+
+                </button>
+
+              ) : rental?.status === 'agreement_pending' ? (
+
+                <button
+                  onClick={() => navigate('/agreements')}
+                  className="w-full py-3 rounded-xl bg-blue-600 text-white flex items-center justify-center gap-2"
+                >
+                  <FileText size={18} />
+                  View Agreement
+                </button>
+
+              ) : rental?.status === 'agreement_accepted' && payment?.paymentStatus !== 'paid' ? (
 
                 <button
                   onClick={
@@ -1841,45 +1936,41 @@ const PropertyDetails = () => {
                   {paymentLoading ? (
 
                     <>
-
-                      <Loader2
-                        size={18}
-                        className="animate-spin"
-                      />
-
+                      <Loader2 size={18} className="animate-spin" />
                       Preparing Payment...
-
                     </>
 
                   ) : (
 
                     <>
-
-                      <CreditCard
-                        size={18}
-                      />
-
-                      Pay Now ₹
-                      {initialPayment.toLocaleString(
-                        'en-IN'
-                      )}
-
+                      <CreditCard size={18} />
+                      Pay Now ₹{initialPayment.toLocaleString('en-IN')}
                     </>
 
                   )}
 
                 </button>
 
-              ) : (rental?.status === 'active' || rental?.status === 'agreement_accepted') &&
-                payment?.paymentStatus === 'paid' ? (
+              ) : (rental?.status === 'payment_success' || (rental?.status === 'agreement_accepted' && payment?.paymentStatus === 'paid')) ? (
 
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => navigate('/agreements')}
+                    onClick={async () => {
+                      try {
+                        setBooking(true);
+                        await api.patch(`/rentals/${rental._id}/confirm`);
+                        window.location.reload();
+                      } catch (err) {
+                        alert('Failed to confirm booking');
+                      } finally {
+                        setBooking(false);
+                      }
+                    }}
+                    disabled={booking}
                     className="w-full py-3 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2"
                   >
-                    <CheckCircle size={18} />
-                    Continue to Agreement
+                    {booking ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                    Confirm Booking
                   </button>
                   {payment?.invoiceUrl && (
                     <button
@@ -1891,7 +1982,27 @@ const PropertyDetails = () => {
                   )}
                 </div>
 
-              ) : property.status === 'available' ? (
+              ) : rental?.status === 'confirmed' || rental?.status === 'active' ? (
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    disabled
+                    className="w-full py-3 rounded-xl bg-green-600 text-white flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={18} />
+                    Booking Confirmed
+                  </button>
+                  {payment?.invoiceUrl && (
+                    <button
+                      onClick={() => window.open(payment.invoiceUrl, '_blank')}
+                      className="w-full py-3 rounded-xl border border-gray-300 text-ink bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
+                    >
+                      Download Invoice
+                    </button>
+                  )}
+                </div>
+
+              ) : (
 
                 <button
                   onClick={
@@ -1903,18 +2014,7 @@ const PropertyDetails = () => {
 
                   {booking
                     ? 'Sending Request...'
-                    : 'Book Property'}
-
-                </button>
-
-              ) : (
-
-                <button
-                  disabled
-                  className="w-full py-3 rounded-xl bg-gray-400 text-white disabled:opacity-70"
-                >
-
-                  Property Not Available
+                    : (rental?.status === 'rejected' || rental?.status === 'cancelled') ? 'Request Again' : 'Request Property'}
 
                 </button>
 
@@ -1923,11 +2023,19 @@ const PropertyDetails = () => {
 
               <p className="text-xs text-ink-muted text-center mt-4">
 
-                {(rental?.status === 'active' || rental?.status === 'agreement_accepted')
+                {(rental?.status === 'confirmed' || rental?.status === 'active')
+                  ? 'Your booking is confirmed.'
+                  : (rental?.status === 'payment_success')
+                  ? 'Payment successful. Please confirm your booking.'
+                  : (rental?.status === 'agreement_accepted')
                   ? 'Payment is required to complete your booking.'
-                  : (rental?.status === 'accepted' || rental?.status === 'agreement_uploaded')
+                  : (rental?.status === 'agreement_pending')
                   ? 'Please review and accept the official agreement from the landlord before paying.'
-                  : 'Your request will be sent to the landlord for approval. Payment is available only after approval.'}
+                  : (rental?.status === 'accepted')
+                  ? 'Landlord accepted your request. Waiting for agreement upload.'
+                  : (rental?.status === 'pending')
+                  ? 'Your request has been sent to the landlord for approval.'
+                  : 'Select dates and request the property.'}
 
               </p>
 

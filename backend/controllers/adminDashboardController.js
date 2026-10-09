@@ -18,6 +18,8 @@ const getAdminDashboard = async (req, res) => {
       inactiveProperties,
       totalRentals,
       activeRentals,
+      pendingRentals,
+      confirmedRentals,
       completedRentals,
       cancelledRentals,
       totalAgreements,
@@ -65,6 +67,14 @@ const getAdminDashboard = async (req, res) => {
 
       Rental.countDocuments({
         status: 'active'
+      }),
+
+      Rental.countDocuments({
+        status: { $in: ['pending', 'accepted', 'agreement_pending', 'agreement_accepted', 'payment_pending', 'payment_success'] }
+      }),
+
+      Rental.countDocuments({
+        status: 'confirmed'
       }),
 
       Rental.countDocuments({
@@ -136,6 +146,8 @@ const getAdminDashboard = async (req, res) => {
       rentals: {
         total: totalRentals,
         active: activeRentals,
+        pending: pendingRentals,
+        confirmed: confirmedRentals,
         completed: completedRentals,
         cancelled: cancelledRentals
       },

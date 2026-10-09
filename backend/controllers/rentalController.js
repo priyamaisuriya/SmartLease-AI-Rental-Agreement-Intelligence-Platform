@@ -66,9 +66,9 @@ const bookProperty = async (req, res) => {
             });
         }
 
-        if (property.status !== 'available') {
+        if (property.status === 'unavailable' || property.status === 'maintenance') {
             return res.status(400).json({
-                message: 'Property is no longer available'
+                message: 'Property is currently unavailable for booking'
             });
         }
 
@@ -124,6 +124,38 @@ const bookProperty = async (req, res) => {
                 });
             }
 
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (start < today) {
+                return res.status(400).json({
+                    message: 'Start date cannot be in the past'
+                });
+            }
+
+            if (property.availableFrom && start < new Date(property.availableFrom)) {
+                return res.status(400).json({
+                    message: 'Start date must be on or after the property availability date'
+                });
+            }
+
+            const durationInMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+            const exactDurationMonths = (end - start) / (1000 * 60 * 60 * 24 * 30.44); // approx
+
+            const minDuration = property.minDuration || 1;
+            const maxDuration = property.maxDuration || 120;
+
+            if (exactDurationMonths < minDuration - 0.1) {
+                return res.status(400).json({
+                    message: `Minimum rental duration is ${minDuration} month(s)`
+                });
+            }
+
+            if (exactDurationMonths > maxDuration + 0.1) {
+                return res.status(400).json({
+                    message: `Maximum rental duration is ${maxDuration} month(s)`
+                });
+            }
+
             // --------------------------------------------------
             // CHECK FOR CLASHING CONFIRMED / ACTIVE RENTALS
             // --------------------------------------------------
@@ -141,11 +173,11 @@ const bookProperty = async (req, res) => {
                 $or: [
                     {
                         startDate: {
-                            $lte: end
+                            $lt: end
                         },
 
                         endDate: {
-                            $gte: start
+                            $gt: start
                         }
                     }
                 ]
@@ -1321,11 +1353,11 @@ const confirmBooking = async (req, res) => {
                 $or: [
                     {
                         startDate: {
-                            $lte: end
+                            $lt: end
                         },
 
                         endDate: {
-                            $gte: start
+                            $gt: start
                         }
                     }
                 ]
