@@ -2025,7 +2025,8 @@ const PropertyDetails = () => {
                         await api.patch(`/rentals/${rental._id}/confirm`);
                         window.location.reload();
                       } catch (err) {
-                        alert('Failed to confirm booking');
+                        alert(err.response?.data?.message || 'Failed to confirm booking');
+                        window.location.reload(); // Reload to reflect status change
                       } finally {
                         setBooking(false);
                       }
@@ -2036,11 +2037,13 @@ const PropertyDetails = () => {
                     {booking ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                     Confirm Booking
                   </button>
-                  {payment?.invoiceUrl && (
+                  {payment?.invoiceNumber && (
                     <button
-                      onClick={() => window.open(payment.invoiceUrl, '_blank')}
+                      onClick={handleDownloadInvoice}
+                      disabled={paymentLoading}
                       className="w-full py-3 rounded-xl border border-gray-300 text-ink bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
                     >
+                      {paymentLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                       Download Invoice
                     </button>
                   )}
@@ -2056,11 +2059,13 @@ const PropertyDetails = () => {
                     <CheckCircle size={18} />
                     Booking Confirmed
                   </button>
-                  {payment?.invoiceUrl && (
+                  {payment?.invoiceNumber && (
                     <button
-                      onClick={() => window.open(payment.invoiceUrl, '_blank')}
+                      onClick={handleDownloadInvoice}
+                      disabled={paymentLoading}
                       className="w-full py-3 rounded-xl border border-gray-300 text-ink bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
                     >
+                      {paymentLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                       Download Invoice
                     </button>
                   )}

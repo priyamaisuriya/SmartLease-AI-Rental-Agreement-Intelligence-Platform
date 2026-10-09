@@ -12,7 +12,8 @@ const RENTAL_STATUSES = [
     'active',
     'completed',
     'cancelled',
-    'expired'
+    'expired',
+    'conflict'
 ];
 
 const VALID_TRANSITIONS = {
@@ -22,12 +23,13 @@ const VALID_TRANSITIONS = {
     'agreement_pending': ['agreement_accepted', 'cancelled'],
     'agreement_accepted': ['payment_pending', 'payment_success', 'cancelled'],
     'payment_pending': ['payment_success', 'cancelled', 'expired'],
-    'payment_success': ['confirmed', 'cancelled'],
+    'payment_success': ['confirmed', 'cancelled', 'conflict'],
     'confirmed': ['active', 'cancelled'],
     'active': ['completed', 'cancelled'],
     'completed': [],
     'cancelled': [],
-    'expired': []
+    'expired': [],
+    'conflict': ['cancelled']
 };
 
 const RentalSchema = new mongoose.Schema(

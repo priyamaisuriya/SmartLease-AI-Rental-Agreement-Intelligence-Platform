@@ -578,6 +578,18 @@ const processMockPayment = async (req, res) => {
 
             tenantEmail:
               tenant.email,
+              
+            landlordName:
+              rental.landlord?.name || property.landlord?.name || 'Landlord',
+
+            rentalStartDate:
+              rental.startDate,
+
+            rentalEndDate:
+              rental.endDate,
+              
+            bookingId:
+              rental._id.toString(),
 
             propertyTitle:
               property.title ||

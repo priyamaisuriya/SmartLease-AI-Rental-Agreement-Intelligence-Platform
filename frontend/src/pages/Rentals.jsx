@@ -60,8 +60,11 @@ const Rentals = () => {
       completed: 'bg-gray-100 text-gray-600',
       pending: 'bg-yellow-50 text-yellow-600',
       accepted: 'bg-blue-50 text-blue-600',
-      agreement_uploaded: 'bg-purple-50 text-purple-600',
+      agreement_pending: 'bg-purple-50 text-purple-600',
       agreement_accepted: 'bg-indigo-50 text-indigo-600',
+      payment_pending: 'bg-orange-50 text-orange-600',
+      payment_success: 'bg-teal-50 text-teal-600',
+      conflict: 'bg-red-100 text-red-700',
       cancelled: 'bg-red-50 text-red-600',
       rejected: 'bg-red-50 text-red-600',
     };

@@ -1347,12 +1347,13 @@ const confirmBooking = async (req, res) => {
             });
 
         if (clashingRental) {
+            rental.previousStatus = rental.status;
+            rental.status = 'conflict';
+            rental.rejectionReason = 'Property confirmed by another tenant. Payment refund required.';
+            await rental.save();
 
-            return res.status(400).json({
-
-                message:
-                    'Property is already booked and confirmed for these dates'
-
+            return res.status(409).json({
+                message: 'Unfortunately, this property was just confirmed by another user for the same dates. Your payment has been marked for a refund.'
             });
         }
 

@@ -15,6 +15,10 @@ const generateInvoice = async (data) => {
         invoiceDate,
         tenantName,
         tenantEmail,
+        landlordName,
+        rentalStartDate,
+        rentalEndDate,
+        bookingId,
         propertyTitle,
         propertyAddress,
         monthlyRent,
@@ -77,24 +81,33 @@ const generateInvoice = async (data) => {
             doc.fontSize(10)
                .font('Helvetica-Bold')
                .fillColor(colorSecondary)
-               .text('Invoice Number:', 350, metaTop)
+               .text('Invoice Number:', 320, metaTop)
                .font('Helvetica')
                .fillColor(colorText)
                .text(invoiceNumber, 440, metaTop);
 
             doc.font('Helvetica-Bold')
                .fillColor(colorSecondary)
-               .text('Date:', 350, metaTop + 15)
+               .text('Date:', 320, metaTop + 15)
                .font('Helvetica')
                .fillColor(colorText)
                .text(new Date(invoiceDate).toLocaleDateString(), 440, metaTop + 15);
 
             doc.font('Helvetica-Bold')
                .fillColor(colorSecondary)
-               .text('Transaction ID:', 350, metaTop + 30)
+               .text('Transaction ID:', 320, metaTop + 30)
                .font('Helvetica')
                .fillColor(colorText)
                .text(transactionId, 440, metaTop + 30);
+               
+            if (bookingId) {
+                doc.font('Helvetica-Bold')
+                   .fillColor(colorSecondary)
+                   .text('Booking ID:', 320, metaTop + 45)
+                   .font('Helvetica')
+                   .fillColor(colorText)
+                   .text(bookingId, 440, metaTop + 45);
+            }
 
             // =====================================================
             // BILL TO & PROPERTY INFO
@@ -113,24 +126,38 @@ const generateInvoice = async (data) => {
                .text(tenantName, 50, detailsTop + 20)
                .font('Helvetica')
                .text(tenantEmail, 50, detailsTop + 35);
+               
+            if (landlordName) {
+                doc.font('Helvetica-Bold')
+                   .text('LANDLORD:', 50, detailsTop + 55)
+                   .font('Helvetica')
+                   .text(landlordName, 120, detailsTop + 55);
+            }
 
             // Property Details
             doc.fontSize(12)
                .font('Helvetica-Bold')
                .fillColor(colorPrimary)
-               .text('PROPERTY DETAILS:', 50, detailsTop + 70);
+               .text('PROPERTY DETAILS:', 50, detailsTop + 85);
                
             doc.fontSize(10)
                .font('Helvetica-Bold')
                .fillColor(colorText)
-               .text(propertyTitle, 50, detailsTop + 90)
+               .text(propertyTitle, 50, detailsTop + 105)
                .font('Helvetica')
-               .text(propertyAddress || 'N/A', 50, detailsTop + 105, { width: 250 });
+               .text(propertyAddress || 'N/A', 50, detailsTop + 120, { width: 250 });
+               
+            if (rentalStartDate && rentalEndDate) {
+                doc.font('Helvetica-Bold')
+                   .text('Rental Dates:', 50, detailsTop + 150)
+                   .font('Helvetica')
+                   .text(`${new Date(rentalStartDate).toLocaleDateString()} - ${new Date(rentalEndDate).toLocaleDateString()}`, 130, detailsTop + 150);
+            }
 
             // =====================================================
             // TABLE HEADER
             // =====================================================
-            const tableTop = 320;
+            const tableTop = 330;
             
             doc.rect(50, tableTop, 495, 25).fill(colorLight);
             
