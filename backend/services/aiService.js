@@ -265,15 +265,6 @@ ${agreementText}
     return generateAIResponse(prompt);
 };
 
-
-module.exports = {
-    generateAgreementSummary,
-    explainClause,
-    detectAgreementRisks,
-    answerAgreementQuestion,
-    analyzePropertyConditions
-};
-
 // =====================================================
 // PROPERTY CONDITIONS ANALYSIS
 // =====================================================
@@ -310,4 +301,12 @@ ${conditionsText}
 `;
 
     return generateAIResponse(prompt);
+};
+
+module.exports = {
+    generateAgreementSummary,
+    explainClause,
+    detectAgreementRisks,
+    answerAgreementQuestion,
+    analyzePropertyConditions
 };
