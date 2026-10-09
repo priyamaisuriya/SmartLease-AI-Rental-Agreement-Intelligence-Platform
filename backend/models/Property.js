@@ -156,7 +156,13 @@ const PropertySchema = new mongoose.Schema(
         maxDuration: {
             type: Number,
             min: [1, 'Maximum duration must be at least 1 month'],
-            default: 120
+            default: 120,
+            validate: {
+                validator: function(value) {
+                    return this.minDuration <= value;
+                },
+                message: 'Maximum duration must be greater than or equal to minimum duration'
+            }
         },
 
         // -----------------------------

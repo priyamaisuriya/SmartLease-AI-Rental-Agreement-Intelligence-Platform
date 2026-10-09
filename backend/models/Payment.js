@@ -60,7 +60,20 @@ const paymentSchema = new mongoose.Schema(
                 'paid',
                 'failed'
             ],
-            default: 'created'
+            default: 'created',
+            validate: {
+                validator: function(v) {
+                    if (this.isNew || !this.isModified('paymentStatus')) return true;
+                    const validTransitions = {
+                        'created': ['pending', 'paid', 'failed'],
+                        'pending': ['paid', 'failed'],
+                        'paid': [],
+                        'failed': ['pending', 'paid']
+                    };
+                    return validTransitions[this._originalPaymentStatus || 'created']?.includes(v);
+                },
+                message: props => `Invalid payment status transition to ${props.value}`
+            }
         },
 
         paymentMethod: {
@@ -108,6 +121,10 @@ const paymentSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+paymentSchema.post('init', function(doc) {
+    doc._originalPaymentStatus = doc.paymentStatus;
+});
 
 module.exports = mongoose.model(
     'Payment',
