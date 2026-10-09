@@ -308,7 +308,6 @@ const bookProperty = async (req, res) => {
 
         await createNotification({ user: req.user.id, title: 'Request Submitted', message: `Your rental request for ${property.title} has been submitted.`, type: 'rental_request', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
         await createNotification({ user: property.landlord, title: 'New Rental Request', message: `You have received a new rental request for ${property.title}.`, type: 'rental_request', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
-        });
 
         // ------------------------------------------------------
         // RESPONSE
