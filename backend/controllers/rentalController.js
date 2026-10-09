@@ -117,9 +117,13 @@ const bookProperty = async (req, res) => {
         // ------------------------------------------------------
 
         if (startDate && endDate) {
+            const [startYear, startMonth, startDay] = startDate.split('-');
+            const start = new Date(startYear, startMonth - 1, startDay);
+            start.setHours(0, 0, 0, 0);
 
-            const start = new Date(startDate);
-            const end = new Date(endDate);
+            const [endYear, endMonth, endDay] = endDate.split('-');
+            const end = new Date(endYear, endMonth - 1, endDay);
+            end.setHours(0, 0, 0, 0);
 
             if (
                 Number.isNaN(start.getTime()) ||
@@ -144,10 +148,14 @@ const bookProperty = async (req, res) => {
                 });
             }
 
-            if (property.availableFrom && start < new Date(property.availableFrom)) {
-                return res.status(400).json({
-                    message: 'Start date must be on or after the property availability date'
-                });
+            if (property.availableFrom) {
+                const availableDate = new Date(property.availableFrom);
+                availableDate.setHours(0, 0, 0, 0);
+                if (start < availableDate) {
+                    return res.status(400).json({
+                        message: 'Start date must be on or after the property availability date'
+                    });
+                }
             }
 
             const durationInMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());

@@ -439,11 +439,13 @@ const PropertyDetails = () => {
       }
 
 
-      const start =
-        new Date(startDate);
+      const [startYear, startMonth, startDay] = startDate.split('-');
+      const start = new Date(startYear, startMonth - 1, startDay);
+      start.setHours(0, 0, 0, 0);
 
-      const end =
-        new Date(endDate);
+      const [endYear, endMonth, endDay] = endDate.split('-');
+      const end = new Date(endYear, endMonth - 1, endDay);
+      end.setHours(0, 0, 0, 0);
 
 
       if (
@@ -469,6 +471,29 @@ const PropertyDetails = () => {
           'Rental end date must be after the start date.'
         );
 
+        return;
+      }
+
+      if (property.availableFrom) {
+        const availableFrom = new Date(property.availableFrom);
+        availableFrom.setHours(0, 0, 0, 0);
+        if (start < availableFrom) {
+          setBookingMessage(`Property is not available until ${availableFrom.toLocaleDateString()}.`);
+          return;
+        }
+      }
+
+      const exactDurationMonths = (end - start) / (1000 * 60 * 60 * 24 * 30.44);
+      const minDuration = property.minDuration || 1;
+      const maxDuration = property.maxDuration || 120;
+
+      if (exactDurationMonths < minDuration - 0.1) {
+        setBookingMessage(`Minimum rental duration is ${minDuration} month(s).`);
+        return;
+      }
+
+      if (exactDurationMonths > maxDuration + 0.1) {
+        setBookingMessage(`Maximum rental duration is ${maxDuration} month(s).`);
         return;
       }
 
@@ -1806,7 +1831,11 @@ const PropertyDetails = () => {
                         id="startDate"
                         type="date"
                         value={startDate}
-                        min={today}
+                        min={
+                          property.availableFrom && new Date(property.availableFrom) > new Date() 
+                            ? new Date(property.availableFrom).toISOString().split('T')[0] 
+                            : today
+                        }
                         onChange={(e) =>
                           setStartDate(
                             e.target.value
