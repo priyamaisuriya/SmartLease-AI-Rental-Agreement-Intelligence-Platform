@@ -85,6 +85,11 @@ const RentalSchema = new mongoose.Schema(
             max: [50000000, 'Security deposit cannot exceed 50,000,000'],
         },
 
+        acknowledgedConditions: {
+            type: Boolean,
+            default: false
+        },
+
         status: {
             type: String,
             enum: RENTAL_STATUSES,

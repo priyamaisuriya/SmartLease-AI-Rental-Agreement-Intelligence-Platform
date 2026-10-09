@@ -73,8 +73,73 @@ const bookProperty = async (req, res) => {
         }
 
         // ------------------------------------------------------
-        // CHECK EXISTING REQUEST
+        // VALIDATE DATES & CHECK EXISTING REQUEST
         // ------------------------------------------------------
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({
+                message: 'Start date and end date are required'
+            });
+        }
+
+        const [startYear, startMonth, startDay] = startDate.split('-');
+        const start = new Date(startYear, startMonth - 1, startDay);
+        start.setHours(0, 0, 0, 0);
+
+        const [endYear, endMonth, endDay] = endDate.split('-');
+        const end = new Date(endYear, endMonth - 1, endDay);
+        end.setHours(0, 0, 0, 0);
+
+        if (
+            Number.isNaN(start.getTime()) ||
+            Number.isNaN(end.getTime())
+        ) {
+            return res.status(400).json({
+                message: 'Invalid rental dates'
+            });
+        }
+
+        if (end <= start) {
+            return res.status(400).json({
+                message: 'End date must be after start date'
+            });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (start < today) {
+            return res.status(400).json({
+                message: 'Start date cannot be in the past'
+            });
+        }
+
+        if (property.availableFrom) {
+            const availableDate = new Date(property.availableFrom);
+            availableDate.setHours(0, 0, 0, 0);
+            if (start < availableDate) {
+                return res.status(400).json({
+                    message: 'Start date must be on or after the property availability date'
+                });
+            }
+        }
+
+        const durationInMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+        const exactDurationMonths = (end - start) / (1000 * 60 * 60 * 24 * 30.44); // approx
+
+        const minDuration = property.minDuration || 1;
+        const maxDuration = property.maxDuration || 120;
+
+        if (exactDurationMonths < minDuration - 0.1) {
+            return res.status(400).json({
+                message: `Minimum rental duration is ${minDuration} month(s)`
+            });
+        }
+
+        if (exactDurationMonths > maxDuration + 0.1) {
+            return res.status(400).json({
+                message: `Maximum rental duration is ${maxDuration} month(s)`
+            });
+        }
 
         const existingRental = await Rental.findOne({
             property: property._id,
@@ -90,13 +155,19 @@ const bookProperty = async (req, res) => {
                     'confirmed',
                     'active'
                 ]
-            }
+            },
+            $or: [
+                {
+                    startDate: { $lt: end },
+                    endDate: { $gt: start }
+                }
+            ]
         });
 
         if (existingRental) {
             return res.status(400).json({
                 message:
-                    'You already have an ongoing request or active rental for this property'
+                    'You already have an ongoing request or active rental for this property on these dates'
             });
         }
 
@@ -112,73 +183,9 @@ const bookProperty = async (req, res) => {
             }
         }
 
-        // ------------------------------------------------------
-        // VALIDATE DATES
-        // ------------------------------------------------------
-
-        if (startDate && endDate) {
-            const [startYear, startMonth, startDay] = startDate.split('-');
-            const start = new Date(startYear, startMonth - 1, startDay);
-            start.setHours(0, 0, 0, 0);
-
-            const [endYear, endMonth, endDay] = endDate.split('-');
-            const end = new Date(endYear, endMonth - 1, endDay);
-            end.setHours(0, 0, 0, 0);
-
-            if (
-                Number.isNaN(start.getTime()) ||
-                Number.isNaN(end.getTime())
-            ) {
-                return res.status(400).json({
-                    message: 'Invalid rental dates'
-                });
-            }
-
-            if (end <= start) {
-                return res.status(400).json({
-                    message: 'End date must be after start date'
-                });
-            }
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            if (start < today) {
-                return res.status(400).json({
-                    message: 'Start date cannot be in the past'
-                });
-            }
-
-            if (property.availableFrom) {
-                const availableDate = new Date(property.availableFrom);
-                availableDate.setHours(0, 0, 0, 0);
-                if (start < availableDate) {
-                    return res.status(400).json({
-                        message: 'Start date must be on or after the property availability date'
-                    });
-                }
-            }
-
-            const durationInMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-            const exactDurationMonths = (end - start) / (1000 * 60 * 60 * 24 * 30.44); // approx
-
-            const minDuration = property.minDuration || 1;
-            const maxDuration = property.maxDuration || 120;
-
-            if (exactDurationMonths < minDuration - 0.1) {
-                return res.status(400).json({
-                    message: `Minimum rental duration is ${minDuration} month(s)`
-                });
-            }
-
-            if (exactDurationMonths > maxDuration + 0.1) {
-                return res.status(400).json({
-                    message: `Maximum rental duration is ${maxDuration} month(s)`
-                });
-            }
-
-            // --------------------------------------------------
-            // CHECK FOR CLASHING CONFIRMED / ACTIVE RENTALS
-            // --------------------------------------------------
+        // --------------------------------------------------
+        // CHECK FOR CLASHING CONFIRMED / ACTIVE RENTALS
+        // --------------------------------------------------
 
             const clashingRental = await Rental.findOne({
                 property: property._id,
@@ -209,8 +216,6 @@ const bookProperty = async (req, res) => {
                         'Property is already booked and confirmed for these dates'
                 });
             }
-        }
-
         // ------------------------------------------------------
         // CREATE PENDING REQUEST
         // ------------------------------------------------------
@@ -233,6 +238,8 @@ const bookProperty = async (req, res) => {
 
             securityDeposit:
                 property.securityDeposit,
+                
+            acknowledgedConditions: req.body.acknowledgedConditions || false,
 
             status: 'pending'
         });
