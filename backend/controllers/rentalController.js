@@ -752,11 +752,11 @@ const updateRentalStatus = async (req, res) => {
                         $or: [
                             {
                                 startDate: {
-                                    $lte: end
+                                    $lt: end
                                 },
 
                                 endDate: {
-                                    $gte: start
+                                    $gt: start
                                 }
                             }
                         ]
@@ -935,8 +935,14 @@ const updateRentalStatus = async (req, res) => {
                 });
             }
 
-            rental.status =
-                'cancelled';
+            if (status === 'rejected') {
+                rental.status = 'rejected';
+                if (req.body.rejectionReason) {
+                    rental.rejectionReason = req.body.rejectionReason;
+                }
+            } else {
+                rental.status = 'cancelled';
+            }
 
             await rental.save();
 

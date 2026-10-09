@@ -90,6 +90,11 @@ const RentalSchema = new mongoose.Schema(
             default: false
         },
 
+        rejectionReason: {
+            type: String,
+            default: ''
+        },
+
         status: {
             type: String,
             enum: RENTAL_STATUSES,

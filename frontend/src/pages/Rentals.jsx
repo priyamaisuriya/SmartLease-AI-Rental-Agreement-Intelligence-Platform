@@ -165,7 +165,11 @@ const Rentals = () => {
       <div className="mt-6 space-y-6">
         {rentals.length > 0 ? (
           (() => {
-            const filteredRentals = rentals.filter(r => activeTab === 'all' || r.status === activeTab);
+            const filteredRentals = rentals.filter(r => {
+              if (activeTab === 'all') return true;
+              if (activeTab === 'cancelled') return r.status === 'cancelled' || r.status === 'rejected';
+              return r.status === activeTab;
+            });
 
             if (filteredRentals.length === 0) {
               return (
@@ -305,6 +309,12 @@ const Rentals = () => {
                         for this rental and may differ from the property's
                         original listed rent.
                       </p>
+
+                      {r.status === 'rejected' && r.rejectionReason && (
+                        <p className="mt-4 rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                          <strong>Rejection Reason:</strong> {r.rejectionReason}
+                        </p>
+                      )}
 
                       {/* Actions */}
                       <div className="mt-5 flex flex-wrap gap-2">

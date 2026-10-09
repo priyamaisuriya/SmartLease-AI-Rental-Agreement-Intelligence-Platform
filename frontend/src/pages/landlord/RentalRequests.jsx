@@ -169,14 +169,14 @@ const RentalRequests = () => {
         : 'reject this rental request';
 
 
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to ${actionText}?`
-      );
-
-
-    if (!confirmed) {
-      return;
+    let rejectionReason = '';
+    if (newStatus === 'rejected') {
+      const reason = window.prompt("Please provide a reason for rejection (optional):");
+      if (reason === null) return;
+      rejectionReason = reason;
+    } else {
+      const confirmed = window.confirm(`Are you sure you want to ${actionText}?`);
+      if (!confirmed) return;
     }
 
 
@@ -199,7 +199,8 @@ const RentalRequests = () => {
         await api.patch(
           `/rentals/${rental._id}/status`,
           {
-            status: newStatus
+            status: newStatus,
+            ...(rejectionReason && { rejectionReason })
           }
         );
 
