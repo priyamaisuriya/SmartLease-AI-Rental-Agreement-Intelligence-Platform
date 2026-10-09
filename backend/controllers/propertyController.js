@@ -1,6 +1,15 @@
 const Property = require('../models/Property');
 const Agreement = require('../models/Agreement');
 const User = require('../models/User');
+const Rental = require('../models/Rental');
+const { notifyAdmins } = require('../services/notificationService');
+
+const {
+    parseDateOnly,
+    todayUtc,
+    overlapFilter,
+    escapeRegex
+} = require('../utils/dates');
 
 const {
     createActivityLog
@@ -207,6 +216,14 @@ const createProperty = async (req, res) => {
         }
 
 
+        await notifyAdmins({
+            title: `New property listed: ${property.title}`,
+            message: `A landlord listed "${property.title}" in ${property.city}.`,
+            type: 'system',
+            relatedEntityModel: 'Property',
+            relatedEntityId: property._id
+        });
+
         // --------------------------------------------------------
         // ACTIVITY LOG
         // --------------------------------------------------------
@@ -354,10 +371,15 @@ const getAvailableProperties = async (req, res) => {
         // CITY
         // --------------------------------------------------------
 
-        if (city) {
+        // Query values must be plain strings (blocks operator objects such as
+        // ?city[$ne]=x) and are escaped before being used in a regex.
+        const asText = (v) =>
+            (typeof v === 'string' ? v.trim().slice(0, 100) : '');
+
+        if (asText(city)) {
 
             filter.city =
-                new RegExp(city, 'i');
+                new RegExp(escapeRegex(asText(city)), 'i');
 
         }
 
@@ -366,10 +388,10 @@ const getAvailableProperties = async (req, res) => {
         // STATE
         // --------------------------------------------------------
 
-        if (state) {
+        if (asText(state)) {
 
             filter.state =
-                new RegExp(state, 'i');
+                new RegExp(escapeRegex(asText(state)), 'i');
 
         }
 
@@ -378,10 +400,10 @@ const getAvailableProperties = async (req, res) => {
         // PROPERTY TYPE
         // --------------------------------------------------------
 
-        if (propertyType) {
+        if (asText(propertyType)) {
 
             filter.propertyType =
-                propertyType;
+                asText(propertyType);
 
         }
 
@@ -390,10 +412,10 @@ const getAvailableProperties = async (req, res) => {
         // FURNISHING
         // --------------------------------------------------------
 
-        if (furnishing) {
+        if (asText(furnishing)) {
 
             filter.furnishing =
-                furnishing;
+                asText(furnishing);
 
         }
 
@@ -402,21 +424,56 @@ const getAvailableProperties = async (req, res) => {
         // RENT RANGE
         // --------------------------------------------------------
 
-        if (minRent || maxRent) {
+        const minRentNum = typeof minRent === 'string' && minRent !== '' ? Number(minRent) : NaN;
+        const maxRentNum = typeof maxRent === 'string' && maxRent !== '' ? Number(maxRent) : NaN;
+
+        if (!Number.isNaN(minRentNum) || !Number.isNaN(maxRentNum)) {
 
             filter.monthlyRent = {};
 
-            if (minRent) {
+            if (!Number.isNaN(minRentNum)) {
 
                 filter.monthlyRent.$gte =
-                    Number(minRent);
+                    minRentNum;
 
             }
 
-            if (maxRent) {
+            if (!Number.isNaN(maxRentNum)) {
 
                 filter.monthlyRent.$lte =
-                    Number(maxRent);
+                    maxRentNum;
+
+            }
+
+        }
+
+        // --------------------------------------------------------
+        // OPTIONAL DATE RANGE
+        // Properties stay visible; each one is flagged with whether
+        // it is free for the requested dates.
+        // --------------------------------------------------------
+
+        let rangeStart = null;
+        let rangeEnd = null;
+
+        if (req.query.startDate || req.query.endDate) {
+
+            rangeStart = parseDateOnly(req.query.startDate);
+            rangeEnd = parseDateOnly(req.query.endDate);
+
+            if (!rangeStart || !rangeEnd || rangeEnd <= rangeStart) {
+
+                return res.status(400).json({
+                    message: 'Provide a valid startDate and endDate (YYYY-MM-DD) with the end after the start'
+                });
+
+            }
+
+            if (rangeStart < todayUtc()) {
+
+                return res.status(400).json({
+                    message: 'Start date cannot be in the past'
+                });
 
             }
 
@@ -440,12 +497,33 @@ const getAvailableProperties = async (req, res) => {
                 );
 
 
+        let results = properties;
+
+        if (rangeStart && rangeEnd && properties.length > 0) {
+
+            const booked = await Rental.find({
+                property: { $in: properties.map((p) => p._id) },
+                status: { $in: Rental.CONFIRMED_STATUSES },
+                ...overlapFilter(rangeStart, rangeEnd)
+            }).select('property');
+
+            const bookedIds = new Set(booked.map((r) => String(r.property)));
+
+            results = properties.map((p) => {
+                const obj = p.toObject();
+                obj.availableForDates = !bookedIds.has(String(p._id));
+                return obj;
+            });
+
+        }
+
         return res.json({
 
             count:
-                properties.length,
+                results.length,
 
-            properties
+            properties:
+                results
 
         });
 
@@ -489,6 +567,22 @@ const getPropertyById = async (req, res) => {
 
 
         if (!property) {
+
+            return res.status(404).json({
+                message: 'Property not found'
+            });
+
+        }
+
+        // Unpublished (inactive) listings are visible only to their owner and admins.
+        const isOwner =
+            String(property.landlord && property.landlord._id) === req.user.id;
+
+        if (
+            property.status === 'inactive' &&
+            !isOwner &&
+            req.user.role !== 'admin'
+        ) {
 
             return res.status(404).json({
                 message: 'Property not found'

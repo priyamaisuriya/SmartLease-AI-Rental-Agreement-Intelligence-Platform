@@ -131,6 +131,69 @@ const getAdminDashboard = async (req, res) => {
       })
     ]);
 
+    // ------------------------------------------------------
+    // REVENUE: verified (paid) payments received this month
+    // ------------------------------------------------------
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [
+      revenueRows,
+      recentActivity,
+      conflictRentals,
+      failedPayments
+    ] = await Promise.all([
+      Payment.aggregate([
+        { $match: { paymentStatus: 'paid', paidAt: { $gte: monthStart } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+
+      ActivityLog.find()
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .populate('user', 'name'),
+
+      Rental.countDocuments({ status: 'conflict' }),
+
+      Payment.countDocuments({
+        paymentStatus: 'failed',
+        updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      })
+    ]);
+
+    const monthlyRevenue = revenueRows.length ? revenueRows[0].total : 0;
+
+    // Alerts come from real workflow data, not stored notifications.
+    const platformAlerts = [];
+
+    if (conflictRentals > 0) {
+      platformAlerts.push({
+        _id: 'conflicts',
+        title: 'Date conflicts',
+        message: `${conflictRentals} request(s) were closed because dates were taken.`,
+        severity: 'medium'
+      });
+    }
+
+    if (failedPayments > 0) {
+      platformAlerts.push({
+        _id: 'failed-payments',
+        title: 'Failed payments',
+        message: `${failedPayments} payment attempt(s) failed in the last 7 days.`,
+        severity: 'medium'
+      });
+    }
+
+    if (overdueReminders > 0) {
+      platformAlerts.push({
+        _id: 'overdue-reminders',
+        title: 'Overdue rent reminders',
+        message: `${overdueReminders} rent reminder(s) are overdue.`,
+        severity: 'medium'
+      });
+    }
+
     return res.json({
       monthlyRevenue,
       recentActivity: recentActivity.map(a => ({
@@ -143,7 +206,7 @@ const getAdminDashboard = async (req, res) => {
         id: a._id,
         type: a.title,
         message: a.message,
-        severity: 'medium'
+        severity: a.severity || 'medium'
       })),
       users: {
         total: totalUsers,

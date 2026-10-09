@@ -77,53 +77,79 @@ const getAIUsage = async (req, res) => {
 
 const getAIUsageStats = async (req, res) => {
   try {
-    const [
-      total,
-      successful,
-      failed,
-      summaries,
-      risks,
-      clauseExplanations,
-      questions
-    ] = await Promise.all([
-      AIUsage.countDocuments(),
+    // Optional time window: ?days=7|30|180|365 (default: all time)
+    const days = parseInt(req.query.days, 10);
+    const match = {};
 
-      AIUsage.countDocuments({
-        status: 'success'
-      }),
+    if (days > 0 && days <= 3650) {
+      match.createdAt = {
+        $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      };
+    }
 
-      AIUsage.countDocuments({
-        status: 'failed'
-      }),
+    const [byOperation, byStatus, daily, topUsers] = await Promise.all([
+      AIUsage.aggregate([
+        { $match: match },
+        { $group: { _id: '$operation', count: { $sum: 1 } } }
+      ]),
 
-      AIUsage.countDocuments({
-        operation: 'summary'
-      }),
+      AIUsage.aggregate([
+        { $match: match },
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
 
-      AIUsage.countDocuments({
-        operation: 'risk_detection'
-      }),
+      AIUsage.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            total: { $sum: 1 },
+            failed: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
 
-      AIUsage.countDocuments({
-        operation: 'clause_explanation'
-      }),
-
-      AIUsage.countDocuments({
-        operation: 'question'
-      })
+      AIUsage.aggregate([
+        { $match: match },
+        { $group: { _id: '$user', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        { $project: { count: 1, name: '$user.name', email: '$user.email' } }
+      ])
     ]);
 
+    const operations = Object.fromEntries(
+      ['summary', 'risk_detection', 'clause_explanation', 'question', 'conditions_analysis', 'document_chat']
+        .map((op) => [op, 0])
+    );
+    byOperation.forEach((o) => {
+      operations[o._id] = o.count;
+    });
+
+    const statusCount = (st) => (byStatus.find((x) => x._id === st) || {}).count || 0;
+    const successful = statusCount('success');
+    const failed = statusCount('failed');
+    const total = successful + failed;
+
     return res.json({
+      days: days > 0 ? days : null,
       total,
       successful,
       failed,
-
-      operations: {
-        summary: summaries,
-        riskDetection: risks,
-        clauseExplanation: clauseExplanations,
-        questions
-      }
+      successRate: total ? Math.round((successful / total) * 1000) / 10 : null,
+      operations,
+      daily: daily.map((d) => ({ date: d._id, total: d.total, failed: d.failed })),
+      topUsers: topUsers.map((u) => ({ name: u.name || 'Unknown', email: u.email || '', count: u.count }))
     });
 
   } catch (err) {
@@ -137,7 +163,6 @@ const getAIUsageStats = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getAIUsage,

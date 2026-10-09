@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getJwtSecret } = require('../utils/jwtSecret');
+const { getSettings } = require('../services/settingsService');
 
 const {
     createActivityLog
@@ -21,8 +23,8 @@ const createToken = (user) => {
 
     return jwt.sign(
         payload,
-        process.env.JWT_SECRET || 'secret123',
-        { expiresIn: '5h' }
+        getJwtSecret(),
+        { expiresIn: `${getSettings().sessionTimeoutMinutes}m` }
     );
 };
 

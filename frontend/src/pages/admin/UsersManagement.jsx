@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, UserPlus, Eye, Edit, Trash2, X } from 'lucide-react';
+import { Search, Filter, UserPlus, Eye, Edit, Ban, CheckCircle, X } from 'lucide-react';
 import DataTable from '../../components/admin/DataTable';
 import StatusBadge from '../../components/admin/StatusBadge';
 import { Link } from 'react-router-dom';
@@ -72,13 +72,15 @@ const UsersManagement = () => {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+  // Users are deactivated rather than deleted so their history stays intact.
+  const handleToggleStatus = async (row) => {
+    const activating = row.status !== 'Active';
+    if (!window.confirm(`Are you sure you want to ${activating ? 'activate' : 'suspend'} ${row.name}?`)) return;
     try {
-      await api.delete(`/users/${userId}`);
+      await api.put(`/users/${row.id}/status`, { isActive: activating });
       await fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user');
+      alert(err.response?.data?.message || 'Failed to update user status');
     }
   };
 
@@ -122,10 +124,11 @@ const UsersManagement = () => {
             <Edit className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleToggleStatus(row)}
+            title={row.status === 'Active' ? 'Suspend account' : 'Activate account'}
             className="p-1 text-text-muted hover:text-[#C1443C] transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
+            {row.status === 'Active' ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
           </button>
         </div>
       )
@@ -233,7 +236,6 @@ const UsersManagement = () => {
                 >
                   <option value="tenant">Tenant</option>
                   <option value="landlord">Landlord</option>
-                  <option value="property_manager">Property Manager</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

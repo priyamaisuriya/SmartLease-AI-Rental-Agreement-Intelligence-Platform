@@ -8,14 +8,16 @@ const adminOnly = require('../middleware/adminOnly');
 const {
   getAllProperties,
   getPropertyDetails,
-  getPropertyStats
+  getPropertyStats,
+  updatePropertyStatus
 } = require('../controllers/adminPropertyController');
 
 router.get(
   '/stats',
   auth,
   adminOnly,
-  getPropertyStats
+  getPropertyStats,
+  updatePropertyStatus
 );
 
 router.get(
@@ -30,6 +32,13 @@ router.get(
   auth,
   adminOnly,
   getPropertyDetails
+);
+
+router.patch(
+  '/:id/status',
+  auth,
+  adminOnly,
+  updatePropertyStatus
 );
 
 module.exports = router;

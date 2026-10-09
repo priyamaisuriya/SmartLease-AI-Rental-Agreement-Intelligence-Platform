@@ -18,10 +18,10 @@ const RENTAL_STATUSES = [
 
 const VALID_TRANSITIONS = {
     'pending': ['accepted', 'rejected', 'cancelled', 'expired'],
-    'accepted': ['agreement_pending', 'cancelled'],
+    'accepted': ['agreement_pending', 'cancelled', 'conflict'],
     'rejected': [],
-    'agreement_pending': ['agreement_accepted', 'cancelled'],
-    'agreement_accepted': ['payment_pending', 'payment_success', 'cancelled'],
+    'agreement_pending': ['agreement_accepted', 'cancelled', 'conflict'],
+    'agreement_accepted': ['agreement_pending', 'payment_pending', 'payment_success', 'cancelled', 'conflict'],
     'payment_pending': ['payment_success', 'cancelled', 'expired'],
     'payment_success': ['confirmed', 'cancelled', 'conflict'],
     'confirmed': ['active', 'cancelled'],
@@ -97,6 +97,34 @@ const RentalSchema = new mongoose.Schema(
             default: ''
         },
 
+        // Agreement version the tenant accepted. Payment is only allowed
+        // while this matches the landlord's current active agreement.
+        acceptedAgreement: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Agreement',
+            default: null
+        },
+
+        acceptedAgreementVersion: {
+            type: Number,
+            default: null
+        },
+
+        agreementAcceptedAt: {
+            type: Date,
+            default: null
+        },
+
+        paymentVerifiedAt: {
+            type: Date,
+            default: null
+        },
+
+        confirmedAt: {
+            type: Date,
+            default: null
+        },
+
         status: {
             type: String,
             enum: RENTAL_STATUSES,
@@ -108,35 +136,67 @@ const RentalSchema = new mongoose.Schema(
     }
 );
 
-RentalSchema.pre('save', async function () {
-    if (!this.isModified('status') || this.isNew) {
+// Remember the persisted status so every save is validated against it,
+// not only saves where a caller remembered to set previousStatus.
+RentalSchema.post('init', function (doc) {
+    doc._originalStatus = doc.status;
+});
+
+RentalSchema.pre('save', function () {
+    if (this.isNew || !this.isModified('status')) {
         return;
     }
 
-    // Validate transitions only when previousStatus is provided.
-    if (
-        this.previousStatus &&
-        VALID_TRANSITIONS[this.previousStatus]
-    ) {
-        if (
-            !VALID_TRANSITIONS[this.previousStatus].includes(
-                this.status
-            )
-        ) {
-            throw new Error(
-                `Invalid status transition from ${this.previousStatus} to ${this.status}`
-            );
-        }
+    const from = this._originalStatus;
+    const to = this.status;
+
+    if (!from || from === to) {
+        return;
     }
+
+    if (!(VALID_TRANSITIONS[from] || []).includes(to)) {
+        throw new Error(`Invalid status transition from ${from} to ${to}`);
+    }
+});
+
+RentalSchema.post('save', function (doc) {
+    doc._originalStatus = doc.status;
 });
 
 // Helper method to safely transition status
 RentalSchema.methods.transitionTo = function (newStatus) {
-    if (!VALID_TRANSITIONS[this.status].includes(newStatus)) {
+    if (!(VALID_TRANSITIONS[this.status] || []).includes(newStatus)) {
         throw new Error(`Invalid status transition from ${this.status} to ${newStatus}`);
     }
-    this.previousStatus = this.status;
     this.status = newStatus;
 };
+
+// Statuses in which a rental holds, or competes for, the property's dates.
+RentalSchema.statics.CONFIRMED_STATUSES = ['confirmed', 'active'];
+RentalSchema.statics.IN_PROGRESS_STATUSES = [
+    'pending', 'accepted', 'agreement_pending', 'agreement_accepted',
+    'payment_pending', 'payment_success'
+];
+RentalSchema.statics.VALID_TRANSITIONS = VALID_TRANSITIONS;
+
+RentalSchema.index({ property: 1, status: 1, startDate: 1, endDate: 1 });
+// Blocks an identical duplicate submission (double click / retry) for the same
+// tenant, property and dates while the earlier request is still open.
+RentalSchema.index(
+    { property: 1, tenant: 1, startDate: 1, endDate: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            status: {
+                $in: [
+                    'pending', 'accepted', 'agreement_pending', 'agreement_accepted',
+                    'payment_pending', 'payment_success', 'confirmed', 'active'
+                ]
+            }
+        }
+    }
+);
+RentalSchema.index({ tenant: 1, createdAt: -1 });
+RentalSchema.index({ landlord: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Rental', RentalSchema);

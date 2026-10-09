@@ -4,7 +4,29 @@ const path = require('path');
 const Agreement = require('../models/Agreement');
 const Rental = require('../models/Rental');
 const Property = require('../models/Property');
-const Notification = require('../models/Notification');
+const {
+    createNotification
+} = require('../services/notificationService');
+
+const {
+    detectDocumentType,
+    removeFile
+} = require('../utils/fileSignature');
+
+const UPLOADABLE_STATUSES = [
+    'accepted',
+    'agreement_pending',
+    'agreement_accepted'
+];
+
+// Once the tenant has moved on to payment the agreement is locked in.
+const LOCKED_RENTAL_STATUSES = [
+    'payment_pending',
+    'payment_success',
+    'confirmed',
+    'active',
+    'completed'
+];
 
 const {
     extractDocumentText
@@ -23,7 +45,12 @@ const {
 
 const uploadAgreement = async (req, res) => {
     try {
-        console.log('[UPLOAD] Starting agreement upload');
+        // Never keep an uploaded file when the request ends in an error.
+        res.on('finish', () => {
+            if (res.statusCode >= 400 && req.file && req.file.path) {
+                removeFile(req.file.path);
+            }
+        });
 
         // 1. Authentication
         if (!req.user || !req.user.id) {
@@ -83,12 +110,17 @@ const uploadAgreement = async (req, res) => {
             });
         }
 
+        // Agreements can only be uploaded after the landlord accepted the request,
+        // and only until the tenant has moved on to payment.
         if (
-            rental.status === 'cancelled' ||
-            rental.status === 'completed'
+            !UPLOADABLE_STATUSES.includes(rental.status)
         ) {
+            removeFile(req.file.path);
             return res.status(400).json({
-                message: 'Agreement cannot be uploaded for this rental'
+                message:
+                    rental.status === 'pending'
+                        ? 'Accept the rental request before uploading an agreement'
+                        : `Agreement cannot be uploaded while the rental is ${rental.status}`
             });
         }
 
@@ -96,16 +128,21 @@ const uploadAgreement = async (req, res) => {
         const property = await Property.findById(rental.property);
 
         if (!property) {
+            removeFile(req.file.path);
             return res.status(404).json({
                 message: 'Related property not found'
             });
         }
 
-        // 6. Extract document text
-        const extension = path
-            .extname(req.file.originalname)
-            .toLowerCase()
-            .replace('.', '');
+        // 6. Validate real file type, then extract document text
+        const extension = detectDocumentType(req.file.path);
+
+        if (!extension) {
+            removeFile(req.file.path);
+            return res.status(400).json({
+                message: 'The uploaded file is not a valid PDF, DOC or DOCX document'
+            });
+        }
 
         let extractedText = '';
 
@@ -182,28 +219,29 @@ const uploadAgreement = async (req, res) => {
             );
         }
 
-        // 10. Update rental status
-        if (
-            [
-                'accepted',
-                'agreement_pending',
-                'agreement_accepted'
-            ].includes(rental.status)
-        ) {
-            rental.status = 'agreement_pending';
-            await rental.save();
-        }
+        // 10. Update rental status. A new version always needs a fresh acceptance.
+        await Rental.findOneAndUpdate(
+            { _id: rental._id, status: { $in: UPLOADABLE_STATUSES } },
+            {
+                $set: {
+                    status: 'agreement_pending',
+                    acceptedAgreement: null,
+                    acceptedAgreementVersion: null,
+                    agreementAcceptedAt: null
+                }
+            }
+        );
 
         // 11. Notify tenant
         try {
-            await Notification.create({
+            await createNotification({
                 user: rental.tenant,
-                type: 'agreement_uploaded',
-                title: 'New Agreement Uploaded',
+                type: 'agreement_update',
+                title: `Rental Agreement v${nextVersion} Uploaded`,
                 message: `Landlord has uploaded ${nextVersion > 1 ? 'an updated' : 'a'
                     } rental agreement for your request. Please review and accept it.`,
-                rentalId: rental._id,
-                propertyId: rental.property
+                relatedEntityModel: 'Agreement',
+                relatedEntityId: agreement._id
             });
 
             console.log('[UPLOAD] Tenant notification created');
@@ -395,6 +433,7 @@ const getAgreementById = async (req, res) => {
             req.user.id;
 
         const isTenant =
+            Boolean(agreement.tenant) &&
             agreement.tenant._id.toString() ===
             req.user.id;
 
@@ -474,6 +513,19 @@ const updateAgreement = async (req, res) => {
             title,
             status
         } = req.body;
+
+        if (status !== undefined && status !== agreement.status) {
+            const lockedRental = await Rental.exists({
+                _id: agreement.rental,
+                status: { $in: LOCKED_RENTAL_STATUSES }
+            });
+
+            if (lockedRental) {
+                return res.status(400).json({
+                    message: 'The agreement status cannot be changed once the tenant has started payment'
+                });
+            }
+        }
 
         const oldTitle = agreement.title;
         const oldStatus = agreement.status;
@@ -596,6 +648,17 @@ const terminateAgreement = async (req, res) => {
             });
         }
 
+        const lockedRental = await Rental.exists({
+            _id: agreement.rental,
+            status: { $in: LOCKED_RENTAL_STATUSES }
+        });
+
+        if (lockedRental) {
+            return res.status(400).json({
+                message: 'The agreement cannot be terminated once the tenant has started payment'
+            });
+        }
+
         const previousStatus =
             agreement.status;
 
@@ -666,7 +729,11 @@ const downloadAgreement = async (req, res) => {
         }
 
         // fileUrl is something like /uploads/agreements/filename.pdf
-        const filePath = path.join(__dirname, '..', agreement.fileUrl);
+        const filePath = path.join(
+            __dirname,
+            '../uploads/agreements',
+            path.basename(agreement.fileUrl)
+        );
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ message: 'File not found on server' });

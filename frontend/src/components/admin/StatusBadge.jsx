@@ -8,17 +8,31 @@ const StatusBadge = ({ status }) => {
       case 'Completed':
       case 'Success':
       case 'Resolved':
+      case 'Confirmed':
+      case 'Reviewed':
+      case 'Accepted':
+      case 'Agreement Accepted':
+      case 'Payment Success':
+      case 'Paid':
         return 'bg-[#4C7A5E]/10 text-[#4C7A5E]';
       case 'Processing':
       case 'Pending':
       case 'Warning':
       case 'Under Review':
+      case 'Agreement Pending':
+      case 'New':
+      case 'Payment Pending':
         return 'bg-[#B8863B]/10 text-[#B8863B]';
       case 'OCR Failed':
       case 'Failed':
       case 'Error':
       case 'Action Required':
       case 'Inactive':
+      case 'Rejected':
+      case 'Cancelled':
+      case 'Conflict':
+      case 'Expired':
+      case 'Terminated':
         return 'bg-risk-red-bg text-risk-red';
       default:
         return 'bg-border text-text-muted';

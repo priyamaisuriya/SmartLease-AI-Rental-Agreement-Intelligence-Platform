@@ -13,6 +13,11 @@ const {
 const { extractDocumentText } = require('../services/documentService');
 
 const {
+    detectDocumentType,
+    removeFile
+} = require('../utils/fileSignature');
+
+const {
     createActivityLog
 } = require('../services/activityLogService');
 
@@ -829,6 +834,12 @@ const analyzeConditions = async (req, res) => {
             });
         }
 
+        if (conditions.length > MAX_CONDITIONS_CHARS) {
+            return res.status(400).json({
+                message: `Conditions are limited to ${MAX_CONDITIONS_CHARS} characters`
+            });
+        }
+
         // Generate AI analysis
         const analysis = await analyzePropertyConditions(
             conditions.trim()
@@ -843,11 +854,24 @@ const analyzeConditions = async (req, res) => {
             );
         }
 
+        await recordAIUsage({
+            user: req.user.id,
+            operation: 'conditions_analysis',
+            status: 'success'
+        });
+
         return res.status(200).json({
             analysis: analysis.trim()
         });
 
     } catch (err) {
+        await recordAIUsage({
+            user: req.user.id,
+            operation: 'conditions_analysis',
+            status: 'failed',
+            errorMessage: err.message
+        });
+
         // Log the actual error for debugging
         console.error('Analyze conditions failed:', {
             message: err.message,
@@ -871,32 +895,64 @@ const analyzeConditions = async (req, res) => {
 // =====================================================
 const path = require('path');
 
+// Limits keep a single request from sending an unbounded prompt to the model.
+const MAX_DOCUMENT_CHARS = 100000;
+const MAX_QUESTION_CHARS = 2000;
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGE_CHARS = 4000;
+const MAX_CONDITIONS_CHARS = 5000;
+
 const uploadChatDocument = async (req, res) => {
+    // The file is only needed for text extraction; never keep it afterwards.
+    const filePath = req.file && req.file.path;
+
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const extension = path
-            .extname(req.file.originalname)
-            .toLowerCase()
-            .replace('.', '');
+        const extension = detectDocumentType(filePath);
 
-        const filePath = path.join(
-            __dirname,
-            '../uploads/agreements', // Reusing agreements directory for simplicity
-            req.file.filename
-        );
+        if (!extension) {
+            return res.status(400).json({
+                message: 'The uploaded file is not a valid PDF, DOC or DOCX document'
+            });
+        }
 
-        const extractedText = await extractDocumentText(filePath, extension);
+        if (extension === 'doc') {
+            return res.status(400).json({
+                message: 'Text extraction is not supported for legacy .doc files. Please upload a PDF or DOCX.'
+            });
+        }
+
+        let extractedText = await extractDocumentText(filePath, extension);
+
+        if (typeof extractedText !== 'string' || !extractedText.trim()) {
+            return res.status(422).json({
+                message: 'No readable text was found in this document (it may be a scanned image).'
+            });
+        }
+
+        const truncated = extractedText.length > MAX_DOCUMENT_CHARS;
+
+        if (truncated) {
+            extractedText = extractedText.slice(0, MAX_DOCUMENT_CHARS);
+        }
 
         return res.json({
-            message: 'Document processed successfully',
-            extractedText
+            message: truncated
+                ? 'Document processed. It was long, so only the first part is used for questions.'
+                : 'Document processed successfully',
+            extractedText,
+            truncated
         });
     } catch (err) {
         console.error('Upload chat document error:', err.message);
         return res.status(500).json({ message: 'Failed to process document' });
+    } finally {
+        if (filePath) {
+            removeFile(filePath);
+        }
     }
 };
 
@@ -905,15 +961,57 @@ const uploadChatDocument = async (req, res) => {
 // =====================================================
 const chatWithDocument = async (req, res) => {
     try {
-        const { documentText, question, history } = req.body;
-        if (!documentText || !question) {
+        const { documentText, question, history } = req.body || {};
+
+        if (
+            typeof documentText !== 'string' || !documentText.trim() ||
+            typeof question !== 'string' || !question.trim()
+        ) {
             return res.status(400).json({ message: 'Document text and question are required' });
         }
 
-        const answer = await answerAgreementQuestion(documentText, question, history || []);
+        if (documentText.length > MAX_DOCUMENT_CHARS) {
+            return res.status(413).json({ message: 'The document is too long to analyse' });
+        }
+
+        if (question.length > MAX_QUESTION_CHARS) {
+            return res.status(400).json({
+                message: `Questions are limited to ${MAX_QUESTION_CHARS} characters`
+            });
+        }
+
+        // Keep only well-formed recent messages; roles are restricted to user/assistant.
+        const safeHistory = Array.isArray(history)
+            ? history
+                .filter((m) =>
+                    m &&
+                    (m.role === 'user' || m.role === 'assistant' || m.role === 'ai') &&
+                    typeof m.content === 'string'
+                )
+                .slice(-MAX_HISTORY_MESSAGES)
+                .map((m) => ({
+                    role: m.role === 'user' ? 'user' : 'assistant',
+                    content: m.content.slice(0, MAX_HISTORY_MESSAGE_CHARS)
+                }))
+            : [];
+
+        const answer = await answerAgreementQuestion(documentText, question.trim(), safeHistory);
+
+        await recordAIUsage({
+            user: req.user.id,
+            operation: 'document_chat',
+            status: 'success'
+        });
 
         return res.json({ answer });
     } catch (err) {
+        await recordAIUsage({
+            user: req.user.id,
+            operation: 'document_chat',
+            status: 'failed',
+            errorMessage: err.message
+        });
+
         console.error('Chat error:', err.message);
         return res.status(500).json({ message: 'Failed to answer question' });
     }

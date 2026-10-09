@@ -122,6 +122,25 @@ const paymentSchema = new mongoose.Schema(
     }
 );
 
+// At most one open (created/pending) order per rental and one paid payment per
+// rental, so retries and double submissions cannot create duplicate charges.
+paymentSchema.index(
+    { rental: 1 },
+    {
+        unique: true,
+        name: 'one_open_payment_per_rental',
+        partialFilterExpression: { paymentStatus: { $in: ['created', 'pending'] } }
+    }
+);
+paymentSchema.index(
+    { rental: 1 },
+    {
+        unique: true,
+        name: 'one_paid_payment_per_rental',
+        partialFilterExpression: { paymentStatus: 'paid' }
+    }
+);
+
 paymentSchema.post('init', function(doc) {
     doc._originalPaymentStatus = doc.paymentStatus;
 });

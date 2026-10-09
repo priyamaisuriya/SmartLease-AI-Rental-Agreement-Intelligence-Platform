@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { id: '/admin/feedback', label: 'Feedback', icon: MessageSquare, section: 'AI & Reports', permission: 'feedback' },
   { id: '/admin/audit-logs', label: 'Audit Logs', icon: ShieldAlert, section: 'System', permission: 'settings' },
   { id: '/admin/permissions', label: 'Permissions', icon: Shield, section: 'System', permission: 'permission-management' },
-  { id: '/admin/notifications', label: 'Notifications', icon: Bell, badge: '2', section: 'System', permission: null },
+  { id: '/admin/notifications', label: 'Notifications', icon: Bell, section: 'System', permission: null },
   { id: '/admin/profile', label: 'Profile', icon: Users, section: 'Account', permission: 'profile' },
   { id: '/admin/settings', label: 'Settings', icon: Settings, section: 'Account', permission: 'settings' },
 ];
@@ -25,20 +25,58 @@ const AdminLayout = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'New User Registered',
-      message: 'A new landlord just created an account.',
-      time: '15 mins ago'
-    },
-    {
-      id: 2,
-      title: 'System Update',
-      message: 'System maintenance scheduled for midnight.',
-      time: '5 hours ago'
+  const [notifications, setNotifications] = useState([]);
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.get('/notifications');
+      setNotifications(res.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to load notifications', err);
     }
-  ]);
+  };
+
+  // Load on mount and refresh every minute.
+  useEffect(() => {
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  // Sidebar badge: the real unread notification count.
+  const badgeFor = (item) =>
+    item.id === '/admin/notifications' && unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null;
+
+  const markNotificationRead = async (n) => {
+    if (n.isRead) return;
+    try {
+      await api.patch(`/notifications/${n._id}/read`);
+      setNotifications((list) => list.map((x) => (x._id === n._id ? { ...x, isRead: true } : x)));
+    } catch (err) {
+      console.error('Failed to mark notification read', err);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications((list) => list.filter((x) => x._id !== id));
+    } catch (err) {
+      console.error('Failed to delete notification', err);
+    }
+  };
+
+  const clearNotifications = async () => {
+    try {
+      await api.delete('/notifications');
+      setNotifications([]);
+    } catch (err) {
+      console.error('Failed to clear notifications', err);
+    }
+  };
+
   const location = useLocation();
 
   const { user, logout } = useAuth();
@@ -114,9 +152,9 @@ const AdminLayout = () => {
                   <NavLink key={item.id} to={item.id} end={item.id === '/admin'} className={({ isActive }) => `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive ? 'bg-gold/12 text-gold-soft font-semibold' : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'}`}>
                     <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.6} />
                     {item.label}
-                    {item.badge && (
+                    {badgeFor(item) && (
                       <span className="ml-auto text-[10.5px] bg-[#C1443C] text-white px-[6px] py-[1px] rounded-[10px] font-semibold">
-                        {item.badge}
+                        {badgeFor(item)}
                       </span>
                     )}
                   </NavLink>
@@ -171,9 +209,9 @@ const AdminLayout = () => {
                   <NavLink key={item.id} to={item.id} end={item.id === '/admin'} onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex items-center gap-[11px] px-3 py-[9px] rounded-[4px] text-[13.5px] font-medium transition-colors w-full ${isActive ? 'bg-gold/12 text-gold-soft font-semibold' : 'text-ink-faint hover:bg-white/5 hover:text-[#EDEBE3]'}`}>
                     <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.6} />
                     {item.label}
-                    {item.badge && (
+                    {badgeFor(item) && (
                       <span className="ml-auto text-[10.5px] bg-[#C1443C] text-white px-[6px] py-[1px] rounded-[10px] font-semibold">
-                        {item.badge}
+                        {badgeFor(item)}
                       </span>
                     )}
                   </NavLink>
@@ -213,7 +251,7 @@ const AdminLayout = () => {
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
               >
                 <Bell className="w-5 h-5" />
-                {notifications.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-risk-amber rounded-full border-2 border-paper"></span>
                 )}
               </button>
@@ -224,7 +262,7 @@ const AdminLayout = () => {
                     <h3 className="font-semibold text-ink">Notifications</h3>
                     {notifications.length > 0 && (
                       <button 
-                        onClick={() => setNotifications(([]) )}
+                        onClick={clearNotifications}
                         className="text-xs text-text-muted hover:text-risk-red transition-colors"
                       >
                         Clear All
@@ -233,15 +271,15 @@ const AdminLayout = () => {
                   </div>
                   <div className="max-h-64 overflow-y-auto scroll-thin">
                     {notifications.length > 0 ? (
-                      notifications.map(n => (
-                        <div key={n.id} className="group relative px-4 py-3 border-b border-border hover:bg-paper-card cursor-pointer transition-colors pr-10">
-                          <p className="text-sm text-ink font-medium">{n.title}</p>
+                      notifications.slice(0, 10).map(n => (
+                        <div key={n._id} onClick={() => markNotificationRead(n)} className={`group relative px-4 py-3 border-b border-border hover:bg-paper-card cursor-pointer transition-colors pr-10 ${n.isRead ? '' : 'bg-lease-50/40'}`}>
+                          <p className={`text-sm text-ink ${n.isRead ? '' : 'font-semibold'}`}>{n.title}</p>
                           <p className="text-xs text-text-muted mt-0.5">{n.message}</p>
-                          <span className="text-[10px] text-text-faint mt-1 block">{n.time}</span>
+                          <span className="text-[10px] text-text-faint mt-1 block">{new Date(n.createdAt).toLocaleString()}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setNotifications(notifications.filter(notif => notif.id !== n.id));
+                              deleteNotification(n._id);
                             }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-faint hover:text-risk-red opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Delete notification"
@@ -252,7 +290,7 @@ const AdminLayout = () => {
                       ))
                     ) : (
                       <div className="px-4 py-6 text-center text-sm text-text-muted">
-                        No new notifications
+                        No notifications
                       </div>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { getSettings } = require('./settingsService');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -41,7 +42,8 @@ const sendVerificationOTP = async (email, otp) => {
     }
 
     const mailOptions = {
-      from: `"SmartLease AI" <${process.env.EMAIL_USER}>`,
+      from: `"${getSettings().siteName}" <${process.env.EMAIL_USER}>`,
+      ...(getSettings().contactEmail ? { replyTo: getSettings().contactEmail } : {}),
       to: email,
       subject: 'SmartLease AI - Email Verification OTP',
 
@@ -235,7 +237,8 @@ const sendInvoiceEmail = async ({
     // ----------------------------------------------------------
 
     const mailOptions = {
-      from: `"SmartLease AI" <${process.env.EMAIL_USER}>`,
+      from: `"${getSettings().siteName}" <${process.env.EMAIL_USER}>`,
+      ...(getSettings().contactEmail ? { replyTo: getSettings().contactEmail } : {}),
 
       to: email,
 
