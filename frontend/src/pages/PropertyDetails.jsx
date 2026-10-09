@@ -1424,6 +1424,9 @@ const PropertyDetails = () => {
                     <div className="text-purple-800 text-sm leading-relaxed whitespace-pre-wrap">
                       {conditionsAnalysis}
                     </div>
+                    <p className="mt-4 text-xs text-purple-700 italic border-t border-purple-200 pt-3">
+                      <strong>Disclaimer:</strong> This AI-generated summary is for informational purposes to help you understand the property conditions. It is not professional legal advice. Always review the full conditions provided by the landlord below.
+                    </p>
                   </div>
                 ) : null}
 

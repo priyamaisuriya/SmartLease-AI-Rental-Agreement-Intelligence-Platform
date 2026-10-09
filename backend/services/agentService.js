@@ -11,71 +11,96 @@ const llm = new ChatGoogleGenerativeAI({
   maxOutputTokens: 2048,
 });
 
-// 2. Create the Extraction Agent
-const extractionPrompt = PromptTemplate.fromTemplate(`
-You are an expert real estate data extractor. 
-Extract the following information from the rental agreement text below.
-If a piece of information is missing, state "Not found".
+// 2. Create the Agreement Analysis Prompt
+const agreementPrompt = PromptTemplate.fromTemplate(`
+You are an expert real estate lawyer and advisor.
+Analyze the rental agreement text below and provide a structured JSON response with the following keys.
+DO NOT use markdown backticks in the response. Just pure JSON.
+Use the actual document as input. Do not invent missing clauses.
+If a piece of information is missing, state "Not specified in the agreement".
 
-Information to extract:
-1. Rent Amount
-2. Security Deposit
-3. Lease Start and End Dates
-4. Notice Period
-
-Agreement Text:
-{document_text}
-
-Provide the output in a clear JSON format.
-`);
-
-const extractionAgent = RunnableSequence.from([
-  extractionPrompt,
-  llm,
-  new StringOutputParser(),
-]);
-
-// 3. Create the Legal Compliance Agent
-const legalPrompt = PromptTemplate.fromTemplate(`
-You are a strict real estate lawyer.
-Analyze the rental agreement text below and flag any missing standard clauses 
-(e.g., subletting, maintenance responsibilities) or unusual/risky terms.
+Keys required:
+- summary: A brief summary of the agreement.
+- rentAndDeposit: Rent amount, security deposit, and payment terms.
+- financialObligations: Any other charges, utilities, or financial responsibilities.
+- responsibilities: Tenant and landlord responsibilities.
+- noticeAndTermination: Notice periods and termination clauses.
+- cancellationAndPenalty: Cancellation terms and penalties.
+- importantDates: Lease start, end dates, and payment due dates.
+- unusualClauses: Unusual, risky, or potentially unfavorable clauses.
+- clarifications: Points that may need clarification.
 
 Agreement Text:
 {document_text}
 
-Provide a short, bulleted list of legal risks.
+JSON Output:
 `);
 
-const legalAgent = RunnableSequence.from([
-  legalPrompt,
+const agreementAgent = RunnableSequence.from([
+  agreementPrompt,
   llm,
   new StringOutputParser(),
 ]);
+
+// 3. Create the Conditions Analysis Prompt
+const conditionsPrompt = PromptTemplate.fromTemplate(`
+You are an expert real estate advisor.
+Analyze the landlord-defined property conditions below and provide a structured JSON response.
+DO NOT use markdown backticks in the response. Just pure JSON.
+Use the actual conditions as input. Do not invent missing clauses.
+If a piece of information is missing, state "Not specified in the conditions".
+
+Keys required:
+- restrictions: Any restrictions (e.g., pets, smoking, occupancy).
+- charges: Any additional charges or deposits mentioned.
+- responsibilities: Maintenance and utility responsibilities.
+- noticeAndCancellation: Notice periods and cancellation terms.
+- warnings: Important warnings or strict rules.
+- summary: A brief friendly summary of what the tenant needs to know.
+
+Conditions Text:
+{document_text}
+
+JSON Output:
+`);
+
+const conditionsAgent = RunnableSequence.from([
+  conditionsPrompt,
+  llm,
+  new StringOutputParser(),
+]);
+
+const cleanJsonResponse = (text) => {
+    let clean = text.trim();
+    if (clean.startsWith('\`\`\`json')) {
+        clean = clean.replace(/^\`\`\`json\n?/, '');
+        clean = clean.replace(/\n?\`\`\`$/, '');
+    } else if (clean.startsWith('\`\`\`')) {
+        clean = clean.replace(/^\`\`\`\n?/, '');
+        clean = clean.replace(/\n?\`\`\`$/, '');
+    }
+    return JSON.parse(clean);
+};
 
 // 4. The Orchestrator (Main Function)
 async function analyzeAgreement(documentText) {
   try {
-    console.log("Starting Multi-Agent Analysis...");
-
-    // Run both agents in parallel
-    const [extractedData, legalRisks] = await Promise.all([
-      extractionAgent.invoke({ document_text: documentText }),
-      legalAgent.invoke({ document_text: documentText }),
-    ]);
-
-    // Combine the results
-    const finalReport = {
-      summary: "Agent Analysis Complete",
-      extractedDetails: extractedData,
-      legalAnalysis: legalRisks
-    };
-
-    return finalReport;
+    const response = await agreementAgent.invoke({ document_text: documentText });
+    return cleanJsonResponse(response);
   } catch (error) {
-    console.error("Agent Analysis Failed:", error);
+    console.error("Agreement Analysis Failed:", error);
     throw error;
   }
 }
 
-module.exports = { analyzeAgreement };
+async function analyzeConditions(conditionsText) {
+  try {
+    const response = await conditionsAgent.invoke({ document_text: conditionsText });
+    return cleanJsonResponse(response);
+  } catch (error) {
+    console.error("Conditions Analysis Failed:", error);
+    throw error;
+  }
+}
+
+module.exports = { analyzeAgreement, analyzeConditions };

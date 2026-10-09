@@ -27,24 +27,36 @@ const generateAIResponse = async (prompt) => {
         );
     }
 
-    const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: {
-            temperature: 0.2,
-            maxOutputTokens: 4096
+    // Handle token/context limits by truncating extremely long inputs
+    // 500,000 characters is a safe limit for typical context windows
+    const MAX_CHARS = 500000;
+    const safePrompt = prompt.length > MAX_CHARS 
+        ? prompt.substring(0, MAX_CHARS) + "\n...[TRUNCATED DUE TO LENGTH]..." 
+        : prompt;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: safePrompt,
+            config: {
+                temperature: 0.2,
+                maxOutputTokens: 4096
+            }
+        });
+
+        const text = response.text;
+
+        if (!text) {
+            throw new Error(
+                'Gemini returned an empty response'
+            );
         }
-    });
 
-    const text = response.text;
-
-    if (!text) {
-        throw new Error(
-            'Gemini returned an empty response'
-        );
+        return text.trim();
+    } catch (error) {
+        console.error("AI Generation failed:", error);
+        throw new Error("AI provider failed to generate analysis. " + error.message);
     }
-
-    return text.trim();
 };
 
 
@@ -71,21 +83,17 @@ clear summary for both the landlord and tenant.
 Do not invent information that is not present in the
 agreement.
 
-Include:
+Include the following sections exactly:
 
-1. Parties involved
-2. Property details
-3. Rent amount
-4. Security deposit
-5. Agreement duration
-6. Payment terms
-7. Maintenance responsibilities
-8. Important tenant responsibilities
-9. Important landlord responsibilities
-10. Termination conditions
-11. Notice period
-12. Important restrictions
-13. Other important clauses
+1. Summary
+2. Rent and deposit
+3. Financial obligations
+4. Tenant and landlord responsibilities
+5. Notice and termination clauses
+6. Cancellation and penalty clauses
+7. Important dates
+8. Unusual or potentially unfavorable clauses
+9. Points that may need clarification
 
 Use simple language.
 
@@ -282,16 +290,13 @@ const analyzePropertyConditions = async (
 You are SmartLease AI.
 
 Analyze the following property rental conditions provided by the landlord.
-Help the tenant understand:
-- Important conditions
+Help the tenant understand the following specific points clearly:
 - Restrictions
-- Financial obligations
-- Potential additional charges
-- Notice period
-- Cancellation conditions
+- Charges
+- Responsibilities
+- Notice periods
+- Cancellation terms
 - Important warnings
-- Unusual or potentially unfavorable clauses
-- Responsibilities of tenant and landlord
 
 Do not provide legal advice. Make the analysis clear and concise.
 
