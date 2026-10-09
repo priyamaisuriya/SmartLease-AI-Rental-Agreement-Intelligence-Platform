@@ -20,14 +20,19 @@ const {
 // Landlord uploads an agreement for one of their rentals
 // =====================================================
 
+
 const uploadAgreement = async (req, res) => {
     try {
+        console.log('[UPLOAD] Starting agreement upload');
+
+        // 1. Authentication
         if (!req.user || !req.user.id) {
             return res.status(401).json({
                 message: 'Authentication required'
             });
         }
 
+        // 2. Authorization
         if (
             req.user.role !== 'landlord' &&
             req.user.role !== 'admin'
@@ -37,16 +42,14 @@ const uploadAgreement = async (req, res) => {
             });
         }
 
+        // 3. Validate file
         if (!req.file) {
             return res.status(400).json({
                 message: 'Please upload an agreement file'
             });
         }
 
-        const {
-            rentalId,
-            title
-        } = req.body;
+        const { rentalId, title } = req.body;
 
         if (!rentalId) {
             return res.status(400).json({
@@ -54,11 +57,14 @@ const uploadAgreement = async (req, res) => {
             });
         }
 
-        if (!title || !title.trim()) {
+        if (typeof title !== 'string' || !title.trim()) {
             return res.status(400).json({
                 message: 'Agreement title is required'
             });
         }
+
+        // 4. Find rental
+        console.log('[UPLOAD] Finding rental');
 
         const rental = await Rental.findById(rentalId);
 
@@ -73,8 +79,7 @@ const uploadAgreement = async (req, res) => {
             rental.landlord.toString() !== req.user.id
         ) {
             return res.status(403).json({
-                message:
-                    'You can only upload agreements for your own rentals'
+                message: 'You can only upload agreements for your own rentals'
             });
         }
 
@@ -83,14 +88,12 @@ const uploadAgreement = async (req, res) => {
             rental.status === 'completed'
         ) {
             return res.status(400).json({
-                message:
-                    'Agreement cannot be uploaded for this rental'
+                message: 'Agreement cannot be uploaded for this rental'
             });
         }
 
-        const property = await Property.findById(
-            rental.property
-        );
+        // 5. Find property
+        const property = await Property.findById(rental.property);
 
         if (!property) {
             return res.status(404).json({
@@ -98,6 +101,7 @@ const uploadAgreement = async (req, res) => {
             });
         }
 
+        // 6. Extract document text
         const extension = path
             .extname(req.file.originalname)
             .toLowerCase()
@@ -112,136 +116,163 @@ const uploadAgreement = async (req, res) => {
                 req.file.filename
             );
 
+            console.log('[UPLOAD] Extracting document text');
+
             extractedText = await extractDocumentText(
                 filePath,
                 extension
             );
 
             console.log(
-                `Agreement text extracted successfully. Characters: ${extractedText.length}`
+                '[UPLOAD] Extraction completed:',
+                extractedText.length,
+                'characters'
             );
-
         } catch (extractionError) {
             console.error(
-                'Document text extraction error:',
-                extractionError.message
+                '[UPLOAD] Document extraction failed:',
+                extractionError.stack || extractionError
             );
         }
 
-        const existingAgreement = await Agreement.findOne({ rental: rental._id }).sort({ version: -1 });
-        let nextVersion = 1;
+        // 7. Determine agreement version
+        console.log('[UPLOAD] Checking existing agreements');
 
-        if (existingAgreement) {
-            nextVersion = (existingAgreement.version || 1) + 1;
-            await Agreement.updateMany(
-                { rental: rental._id, status: 'active' },
-                { $set: { status: 'terminated' } }
-            );
-        }
+        const existingAgreement = await Agreement.findOne({
+            rental: rental._id
+        }).sort({ version: -1 });
 
+        const nextVersion = existingAgreement
+            ? (existingAgreement.version || 1) + 1
+            : 1;
+
+        // 8. Create agreement
         const agreement = new Agreement({
             property: rental.property,
             rental: rental._id,
             landlord: rental.landlord,
             tenant: rental.tenant,
-
             title: title.trim(),
-
             originalFileName: req.file.originalname,
-
-            fileUrl:
-                `/uploads/agreements/${req.file.filename}`,
-
+            fileUrl: `/uploads/agreements/${req.file.filename}`,
             fileType: extension,
-
             status: 'active',
-            
             version: nextVersion,
-
             uploadedAt: new Date(),
-
             extractedText
         });
 
+        console.log('[UPLOAD] Saving agreement');
+
         await agreement.save();
 
-        if (['accepted', 'agreement_pending', 'agreement_accepted'].includes(rental.status)) {
+        console.log('[UPLOAD] Agreement saved:', agreement._id.toString());
+
+        // 9. Terminate previous active agreements after successful save
+        if (existingAgreement) {
+            await Agreement.updateMany(
+                {
+                    rental: rental._id,
+                    _id: { $ne: agreement._id },
+                    status: 'active'
+                },
+                {
+                    $set: { status: 'terminated' }
+                }
+            );
+        }
+
+        // 10. Update rental status
+        if (
+            [
+                'accepted',
+                'agreement_pending',
+                'agreement_accepted'
+            ].includes(rental.status)
+        ) {
             rental.status = 'agreement_pending';
             await rental.save();
         }
 
+        // 11. Notify tenant
         try {
             await Notification.create({
                 user: rental.tenant,
                 type: 'agreement_uploaded',
                 title: 'New Agreement Uploaded',
-                message: `Landlord has uploaded ${nextVersion > 1 ? 'an updated' : 'a'} rental agreement for your request. Please review and accept it.`,
+                message: `Landlord has uploaded ${nextVersion > 1 ? 'an updated' : 'a'
+                    } rental agreement for your request. Please review and accept it.`,
                 rentalId: rental._id,
                 propertyId: rental.property
             });
+
+            console.log('[UPLOAD] Tenant notification created');
         } catch (notifErr) {
-            console.error('Failed to create notification for agreement upload:', notifErr);
+            console.error(
+                '[UPLOAD] Notification creation failed:',
+                notifErr.stack || notifErr
+            );
         }
 
-        // =====================================================
-        // ACTIVITY LOG
-        // =====================================================
+        // 12. Create activity log
+        try {
+            console.log('[UPLOAD] Creating activity log');
 
-        await createActivityLog({
-            userId: req.user.id,
-            action: 'AGREEMENT_UPLOADED',
-            module: 'agreement',
-            description:
-                `Agreement "${agreement.title}" was uploaded`,
-            targetType: 'Agreement',
-            targetId: agreement._id,
-            metadata: {
-                rentalId: rental._id,
-                propertyId: rental.property,
-                tenantId: rental.tenant,
-                landlordId: rental.landlord,
-                fileType: extension,
-                originalFileName: req.file.originalname
-            },
-            req,
-            status: 'success'
-        });
+            await createActivityLog({
+                userId: req.user.id,
+                action: 'AGREEMENT_UPLOADED',
+                module: 'agreement',
+                description: `Agreement "${agreement.title}" was uploaded`,
+                targetType: 'Agreement',
+                targetId: agreement._id,
+                metadata: {
+                    rentalId: rental._id,
+                    propertyId: rental.property,
+                    tenantId: rental.tenant,
+                    landlordId: rental.landlord,
+                    fileType: extension,
+                    originalFileName: req.file.originalname
+                },
+                req,
+                status: 'success'
+            });
 
-        const populatedAgreement =
-            await Agreement.findById(
-                agreement._id
-            )
-                .populate(
-                    'property',
-                    'title address city state'
-                )
-                .populate(
-                    'landlord',
-                    'name email phone'
-                )
-                .populate(
-                    'tenant',
-                    'name email phone'
-                )
-                .populate(
-                    'rental',
-                    'monthlyRent securityDeposit startDate endDate status'
-                );
+            console.log('[UPLOAD] Activity log completed');
+        } catch (activityError) {
+            console.error(
+                '[UPLOAD] Activity log failed:',
+                activityError.stack || activityError
+            );
+        }
+
+        // 13. Return populated agreement
+        console.log('[UPLOAD] Populating agreement');
+
+        const populatedAgreement = await Agreement.findById(
+            agreement._id
+        )
+            .populate('property', 'title address city state')
+            .populate('landlord', 'name email phone')
+            .populate('tenant', 'name email phone')
+            .populate(
+                'rental',
+                'monthlyRent securityDeposit startDate endDate status'
+            );
+
+        console.log('[UPLOAD] Upload completed successfully');
 
         return res.status(201).json({
-            message:
-                'Agreement uploaded successfully',
+            message: 'Agreement uploaded successfully',
             agreement: populatedAgreement
         });
 
     } catch (err) {
-        console.error(
-            'Upload agreement error:',
-            err.message
-        );
+        console.error('[UPLOAD] FATAL ERROR:', err);
+        console.error('[UPLOAD] STACK TRACE:', err.stack);
 
         return res.status(500).json({
-            message: 'Server error'
+            message: 'Failed to upload agreement',
+            error: err.message
         });
     }
 };

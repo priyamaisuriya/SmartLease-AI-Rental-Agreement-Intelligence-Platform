@@ -814,19 +814,55 @@ const getLatestRisks = async (
 // =====================================================
 // PROPERTY CONDITIONS ANALYSIS
 // =====================================================
+
 const analyzeConditions = async (req, res) => {
     try {
-        const { conditions } = req.body;
-        if (!conditions) {
-            return res.status(400).json({ message: 'Conditions text is required' });
+        const { conditions } = req.body || {};
+
+        // Validate the incoming request
+        if (
+            typeof conditions !== 'string' ||
+            !conditions.trim()
+        ) {
+            return res.status(400).json({
+                message: 'Conditions text is required'
+            });
         }
-        
-        const analysis = await analyzePropertyConditions(conditions);
-        
-        return res.json({ analysis });
+
+        // Generate AI analysis
+        const analysis = await analyzePropertyConditions(
+            conditions.trim()
+        );
+
+        if (
+            typeof analysis !== 'string' ||
+            !analysis.trim()
+        ) {
+            throw new Error(
+                'AI service returned an empty analysis'
+            );
+        }
+
+        return res.status(200).json({
+            analysis: analysis.trim()
+        });
+
     } catch (err) {
-        console.error('Analyze conditions error:', err.message);
-        return res.status(500).json({ message: 'Failed to analyze conditions' });
+        // Log the actual error for debugging
+        console.error('Analyze conditions failed:', {
+            message: err.message,
+            status: err.status,
+            code: err.code,
+            stack: err.stack
+        });
+
+        // Keep detailed errors out of production responses
+        return res.status(500).json({
+            message: 'Failed to analyze conditions',
+            ...(process.env.NODE_ENV !== 'production' && {
+                error: err.message
+            })
+        });
     }
 };
 
@@ -873,9 +909,9 @@ const chatWithDocument = async (req, res) => {
         if (!documentText || !question) {
             return res.status(400).json({ message: 'Document text and question are required' });
         }
-        
+
         const answer = await answerAgreementQuestion(documentText, question, history || []);
-        
+
         return res.json({ answer });
     } catch (err) {
         console.error('Chat error:', err.message);

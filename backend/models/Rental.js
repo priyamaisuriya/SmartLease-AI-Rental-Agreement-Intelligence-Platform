@@ -66,7 +66,7 @@ const RentalSchema = new mongoose.Schema(
             type: Date,
             required: true,
             validate: {
-                validator: function(value) {
+                validator: function (value) {
                     return this.startDate < value;
                 },
                 message: 'End date must be after start date'
@@ -108,26 +108,30 @@ const RentalSchema = new mongoose.Schema(
     }
 );
 
-RentalSchema.pre('save', function(next) {
-    if (this.isModified('status')) {
-        // Find previous status from DB or if it's new, it's 'pending'
-        // For existing documents, this._original isn't automatically available, but we can check if it's a new document
-        if (!this.isNew) {
-            // Mongoose doesn't easily provide the previous value in pre-save hooks unless fetched.
-            // But we can add a custom method for transitions or let the controller handle it.
-            // For now, we will add a check if the controller explicitly sets `previousStatus`
-            if (this.previousStatus && VALID_TRANSITIONS[this.previousStatus]) {
-                if (!VALID_TRANSITIONS[this.previousStatus].includes(this.status)) {
-                    return next(new Error(`Invalid status transition from ${this.previousStatus} to ${this.status}`));
-                }
-            }
+RentalSchema.pre('save', async function () {
+    if (!this.isModified('status') || this.isNew) {
+        return;
+    }
+
+    // Validate transitions only when previousStatus is provided.
+    if (
+        this.previousStatus &&
+        VALID_TRANSITIONS[this.previousStatus]
+    ) {
+        if (
+            !VALID_TRANSITIONS[this.previousStatus].includes(
+                this.status
+            )
+        ) {
+            throw new Error(
+                `Invalid status transition from ${this.previousStatus} to ${this.status}`
+            );
         }
     }
-    next();
 });
 
 // Helper method to safely transition status
-RentalSchema.methods.transitionTo = function(newStatus) {
+RentalSchema.methods.transitionTo = function (newStatus) {
     if (!VALID_TRANSITIONS[this.status].includes(newStatus)) {
         throw new Error(`Invalid status transition from ${this.status} to ${newStatus}`);
     }
@@ -135,4 +139,4 @@ RentalSchema.methods.transitionTo = function(newStatus) {
     this.status = newStatus;
 };
 
-module.exports = mongoose.model('Rental', RentalSchema);
+module.exports = mongoose.model('Rental', RentalSchema);

@@ -388,22 +388,38 @@ const PropertyDetails = () => {
   // ANALYZE CONDITIONS
   // ============================================================
 
+  const [analysisError, setAnalysisError] = useState('');
+
   const handleAnalyzeConditions = async () => {
-    if (!property?.conditions) return;
-    
+    if (
+      typeof property?.conditions !== 'string' ||
+      !property.conditions.trim()
+    ) {
+      setAnalysisError('No property conditions available.');
+      return;
+    }
+
     try {
       setIsAnalyzingConditions(true);
-      const response = await api.post('/ai/conditions/analyze', {
-        conditions: property.conditions
-      });
+      setAnalysisError('');
+
+      const response = await api.post(
+        '/ai/conditions/analyze',
+        { conditions: property.conditions }
+      );
+
       setConditionsAnalysis(response.data.analysis);
     } catch (err) {
       console.error('Failed to analyze conditions:', err);
+
+      setAnalysisError(
+        err.response?.data?.message ||
+        'Unable to analyze conditions. Please try again.'
+      );
     } finally {
       setIsAnalyzingConditions(false);
     }
   };
-
 
   // ============================================================
   // BOOK PROPERTY
@@ -521,7 +537,7 @@ const PropertyDetails = () => {
               startDate,
 
               endDate,
-              
+
               acknowledgedConditions
             }
           );
@@ -1144,10 +1160,10 @@ const PropertyDetails = () => {
 
   const imageUrl =
     property.images &&
-    property.images.length > 0
+      property.images.length > 0
       ? property.images[0].startsWith(
-          'http'
-        )
+        'http'
+      )
         ? property.images[0]
         : `http://localhost:5000${property.images[0]}`
       : null;
@@ -1265,11 +1281,10 @@ const PropertyDetails = () => {
 
 
                 <span
-                  className={`px-3 py-1.5 rounded-full text-sm ${
-                    property.status === 'available'
+                  className={`px-3 py-1.5 rounded-full text-sm ${property.status === 'available'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-600'
-                  }`}
+                    }`}
                 >
 
                   {property.status}
@@ -1365,9 +1380,9 @@ const PropertyDetails = () => {
 
                     {property.furnishing
                       ? property.furnishing.replace(
-                          '_',
-                          ' '
-                        )
+                        '_',
+                        ' '
+                      )
                       : 'Not specified'}
 
                   </p>
@@ -1835,8 +1850,8 @@ const PropertyDetails = () => {
                         type="date"
                         value={startDate}
                         min={
-                          property.availableFrom && new Date(property.availableFrom) > new Date() 
-                            ? new Date(property.availableFrom).toISOString().split('T')[0] 
+                          property.availableFrom && new Date(property.availableFrom) > new Date()
+                            ? new Date(property.availableFrom).toISOString().split('T')[0]
                             : today
                         }
                         onChange={(e) =>
@@ -2095,16 +2110,16 @@ const PropertyDetails = () => {
                 {(rental?.status === 'confirmed' || rental?.status === 'active')
                   ? 'Your booking is confirmed.'
                   : (rental?.status === 'payment_success')
-                  ? 'Payment successful. Please confirm your booking.'
-                  : (rental?.status === 'agreement_accepted')
-                  ? 'Payment is required to complete your booking.'
-                  : (rental?.status === 'agreement_pending')
-                  ? 'Please review and accept the official agreement from the landlord before paying.'
-                  : (rental?.status === 'accepted')
-                  ? 'Landlord accepted your request. Waiting for agreement upload.'
-                  : (rental?.status === 'pending')
-                  ? 'Your request has been sent to the landlord for approval.'
-                  : 'Select dates and request the property.'}
+                    ? 'Payment successful. Please confirm your booking.'
+                    : (rental?.status === 'agreement_accepted')
+                      ? 'Payment is required to complete your booking.'
+                      : (rental?.status === 'agreement_pending')
+                        ? 'Please review and accept the official agreement from the landlord before paying.'
+                        : (rental?.status === 'accepted')
+                          ? 'Landlord accepted your request. Waiting for agreement upload.'
+                          : (rental?.status === 'pending')
+                            ? 'Your request has been sent to the landlord for approval.'
+                            : 'Select dates and request the property.'}
 
               </p>
 
@@ -2287,11 +2302,10 @@ const PropertyDetails = () => {
                       'mock_card'
                     )
                   }
-                  className={`p-3 rounded-lg border text-sm ${
-                    paymentMethod === 'mock_card'
+                  className={`p-3 rounded-lg border text-sm ${paymentMethod === 'mock_card'
                       ? 'border-ink bg-gray-100'
                       : 'border-gray-200'
-                  }`}
+                    }`}
                 >
 
                   Card
@@ -2308,11 +2322,10 @@ const PropertyDetails = () => {
                       'mock_upi'
                     )
                   }
-                  className={`p-3 rounded-lg border text-sm ${
-                    paymentMethod === 'mock_upi'
+                  className={`p-3 rounded-lg border text-sm ${paymentMethod === 'mock_upi'
                       ? 'border-ink bg-gray-100'
                       : 'border-gray-200'
-                  }`}
+                    }`}
                 >
 
                   UPI
@@ -2329,11 +2342,10 @@ const PropertyDetails = () => {
                       'mock_netbanking'
                     )
                   }
-                  className={`p-3 rounded-lg border text-sm ${
-                    paymentMethod === 'mock_netbanking'
+                  className={`p-3 rounded-lg border text-sm ${paymentMethod === 'mock_netbanking'
                       ? 'border-ink bg-gray-100'
                       : 'border-gray-200'
-                  }`}
+                    }`}
                 >
 
                   Net Banking
