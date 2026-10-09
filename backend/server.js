@@ -67,6 +67,9 @@ const adminFeedbackRoutes =
 
 const feedbackRoutes =
   require('./routes/feedbackRoutes');
+  
+const notificationRoutes =
+  require('./routes/notificationRoutes');
 
 
 // ============================================================
@@ -176,6 +179,11 @@ app.use(
 app.use(
   '/api/feedback',
   feedbackRoutes
+);
+
+app.use(
+  '/api/notifications',
+  notificationRoutes
 );
 
 app.use(

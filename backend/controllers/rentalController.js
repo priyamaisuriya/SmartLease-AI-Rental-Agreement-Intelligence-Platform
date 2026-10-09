@@ -306,6 +306,10 @@ const bookProperty = async (req, res) => {
             status: 'success'
         });
 
+        await createNotification({ user: req.user.id, title: 'Request Submitted', message: `Your rental request for ${property.title} has been submitted.`, type: 'rental_request', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
+        await createNotification({ user: property.landlord, title: 'New Rental Request', message: `You have received a new rental request for ${property.title}.`, type: 'rental_request', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
+        });
+
         // ------------------------------------------------------
         // RESPONSE
         // ------------------------------------------------------
@@ -938,6 +942,7 @@ const updateRentalStatus = async (req, res) => {
 
             if (status === 'rejected') {
                 rental.status = 'rejected';
+        await createNotification({ user: rental.tenant, title: 'Rental Request Rejected', message: `Your request for ${property.title} was rejected.`, type: 'rental_update', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
                 if (req.body.rejectionReason) {
                     rental.rejectionReason = req.body.rejectionReason;
                 }
@@ -1349,6 +1354,8 @@ const confirmBooking = async (req, res) => {
         if (clashingRental) {
             rental.previousStatus = rental.status;
             rental.status = 'conflict';
+        await createNotification({ user: rental.tenant, title: 'Date Conflict Detected', message: 'Unfortunately, this property was just confirmed by another user for the same dates. Your payment has been marked for a refund.', type: 'system', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
+        await createNotification({ user: rental.landlord, title: 'Overlapping Request Cancelled', message: 'An overlapping paid request was automatically cancelled due to date conflict.', type: 'system', relatedEntityModel: 'Rental', relatedEntityId: rental._id });
             rental.rejectionReason = 'Property confirmed by another tenant. Payment refund required.';
             await rental.save();
 
