@@ -82,11 +82,11 @@ const getAuthorizedAgreement = async (
         req.user.role === 'admin';
 
     const isLandlord =
-        agreement.landlord.toString() ===
+        agreement.landlord?.toString() ===
         req.user.id;
 
     const isTenant =
-        agreement.tenant.toString() ===
+        agreement.tenant?.toString() ===
         req.user.id;
 
     if (
