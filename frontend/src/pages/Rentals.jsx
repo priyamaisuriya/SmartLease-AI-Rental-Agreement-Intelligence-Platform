@@ -340,7 +340,7 @@ const Rentals = () => {
                           Analyze Agreement
                         </Link>
 
-                        {r.status === 'agreement_uploaded' && (
+                        {r.status === 'agreement_pending' && (
                           <button
                             onClick={() => handleAcceptAgreement(r._id)}
                             className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"

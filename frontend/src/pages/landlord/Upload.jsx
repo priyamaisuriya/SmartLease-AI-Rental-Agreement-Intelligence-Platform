@@ -60,8 +60,8 @@ const Upload = () => {
         Array.isArray(rentalData)
           ? rentalData.filter(
             (rental) =>
-              rental.status === 'active' ||
-              rental.status === 'pending'
+              rental.status === 'accepted' ||
+              rental.status === 'agreement_pending'
           )
           : [];
 

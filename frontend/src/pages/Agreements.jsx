@@ -277,18 +277,26 @@ const Agreements = () => {
 
                   {/* Download */}
                   {a.fileUrl && (
-                    <a
-                      href={
-                        a.fileUrl.startsWith('http')
-                          ? a.fileUrl
-                          : `http://localhost:5000${a.fileUrl}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await api.get(`/agreements/${a._id}/download`, { responseType: 'blob' });
+                          const url = window.URL.createObjectURL(new Blob([res.data]));
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.setAttribute('download', a.originalFileName);
+                          document.body.appendChild(link);
+                          link.click();
+                          link.remove();
+                        } catch (err) {
+                          alert('Failed to download agreement');
+                        }
+                      }}
                       className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-ink hover:bg-paper"
                     >
                       Download
-                    </a>
+                    </button>
                   )}
 
                 </div>

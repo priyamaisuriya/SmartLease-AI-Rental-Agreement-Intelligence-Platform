@@ -1,5 +1,6 @@
 const Rental = require('../models/Rental');
 const Property = require('../models/Property');
+const Agreement = require('../models/Agreement');
 const User = require('../models/User');
 
 const {
@@ -1155,6 +1156,13 @@ const acceptAgreement = async (req, res) => {
             'agreement_accepted';
 
         await rental.save();
+
+        const agreement = await Agreement.findOne({ rental: rental._id, status: 'active' }).sort({ version: -1 });
+        if (agreement) {
+            agreement.acceptedAt = new Date();
+            agreement.acceptedBy = req.user.id;
+            await agreement.save();
+        }
 
         await createActivityLog({
 

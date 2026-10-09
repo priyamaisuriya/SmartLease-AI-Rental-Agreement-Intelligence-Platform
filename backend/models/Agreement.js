@@ -65,6 +65,17 @@ const AgreementSchema = new mongoose.Schema(
             type: String,
             default: '',
         },
+        version: {
+            type: Number,
+            default: 1,
+        },
+        acceptedAt: {
+            type: Date,
+        },
+        acceptedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        },
     },
     {
         timestamps: true,

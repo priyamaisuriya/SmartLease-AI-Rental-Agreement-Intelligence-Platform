@@ -61,4 +61,13 @@ router.put(
 );
 
 
+// Download agreement
+router.get(
+    '/:id/download',
+    auth,
+    // requirePermission('agreement-view') - we will verify access inside the controller
+    require('../controllers/agreementController').downloadAgreement
+);
+
+
 module.exports = router;

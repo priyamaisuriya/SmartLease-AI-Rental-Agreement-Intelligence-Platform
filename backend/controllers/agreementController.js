@@ -1,8 +1,10 @@
+const fs = require('fs');
 const path = require('path');
 
 const Agreement = require('../models/Agreement');
 const Rental = require('../models/Rental');
 const Property = require('../models/Property');
+const Notification = require('../models/Notification');
 
 const {
     extractDocumentText
@@ -126,6 +128,17 @@ const uploadAgreement = async (req, res) => {
             );
         }
 
+        const existingAgreement = await Agreement.findOne({ rental: rental._id }).sort({ version: -1 });
+        let nextVersion = 1;
+
+        if (existingAgreement) {
+            nextVersion = (existingAgreement.version || 1) + 1;
+            await Agreement.updateMany(
+                { rental: rental._id, status: 'active' },
+                { $set: { status: 'terminated' } }
+            );
+        }
+
         const agreement = new Agreement({
             property: rental.property,
             rental: rental._id,
@@ -142,6 +155,8 @@ const uploadAgreement = async (req, res) => {
             fileType: extension,
 
             status: 'active',
+            
+            version: nextVersion,
 
             uploadedAt: new Date(),
 
@@ -153,6 +168,19 @@ const uploadAgreement = async (req, res) => {
         if (['accepted', 'agreement_pending', 'agreement_accepted'].includes(rental.status)) {
             rental.status = 'agreement_pending';
             await rental.save();
+        }
+
+        try {
+            await Notification.create({
+                user: rental.tenant,
+                type: 'agreement_uploaded',
+                title: 'New Agreement Uploaded',
+                message: `Landlord has uploaded ${nextVersion > 1 ? 'an updated' : 'a'} rental agreement for your request. Please review and accept it.`,
+                rentalId: rental._id,
+                propertyId: rental.property
+            });
+        } catch (notifErr) {
+            console.error('Failed to create notification for agreement upload:', notifErr);
         }
 
         // =====================================================
@@ -583,10 +611,48 @@ const terminateAgreement = async (req, res) => {
 };
 
 
+// =====================================================
+// DOWNLOAD AGREEMENT
+// =====================================================
+
+const downloadAgreement = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const agreement = await Agreement.findById(req.params.id);
+        if (!agreement) {
+            return res.status(404).json({ message: 'Agreement not found' });
+        }
+
+        const isAdmin = req.user.role === 'admin';
+        const isLandlord = agreement.landlord.toString() === req.user.id;
+        const isTenant = agreement.tenant && agreement.tenant.toString() === req.user.id;
+
+        if (!isAdmin && !isLandlord && !isTenant) {
+            return res.status(403).json({ message: 'You are not authorized to view this agreement' });
+        }
+
+        // fileUrl is something like /uploads/agreements/filename.pdf
+        const filePath = path.join(__dirname, '..', agreement.fileUrl);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ message: 'File not found on server' });
+        }
+
+        return res.download(filePath, agreement.originalFileName);
+    } catch (err) {
+        console.error('Download agreement error:', err.message);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     uploadAgreement,
     getMyAgreements,
     getAgreementById,
     updateAgreement,
-    terminateAgreement
+    terminateAgreement,
+    downloadAgreement
 };

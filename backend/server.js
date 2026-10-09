@@ -82,6 +82,10 @@ app.use(express.json());
 // STATIC UPLOADS
 // ============================================================
 
+app.use('/uploads/agreements', (req, res, next) => {
+  res.status(403).json({ message: 'Direct access to agreements is forbidden. Use secure download API.' });
+});
+
 app.use(
   '/uploads',
   express.static(
