@@ -101,6 +101,18 @@ const bookProperty = async (req, res) => {
         }
 
         // ------------------------------------------------------
+        // ACKNOWLEDGE CONDITIONS CHECK
+        // ------------------------------------------------------
+        
+        if (property.conditions && property.conditions.trim() !== '') {
+            if (req.body.acknowledgedConditions !== true) {
+                return res.status(400).json({
+                    message: 'You must acknowledge the property conditions before submitting a request'
+                });
+            }
+        }
+
+        // ------------------------------------------------------
         // VALIDATE DATES
         // ------------------------------------------------------
 

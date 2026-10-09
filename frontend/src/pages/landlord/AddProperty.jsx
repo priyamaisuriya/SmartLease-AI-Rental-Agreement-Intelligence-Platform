@@ -99,6 +99,8 @@ const AddProperty = () => {
     images: [],
     draftAgreement: null,
     conditions: '',
+    minDuration: 1,
+    maxDuration: 120,
   });
 
   const stepTitles = [
@@ -208,6 +210,12 @@ const AddProperty = () => {
             Array.isArray(property.images)
               ? property.images
               : [],
+
+          minDuration:
+            property.minDuration || 1,
+
+          maxDuration:
+            property.maxDuration || 120,
         });
       } catch (err) {
         console.error(
@@ -233,15 +241,17 @@ const AddProperty = () => {
    */
   const toggleAmenity = (amenity) => {
     setFormData((prev) => {
-      const exists =
-        prev.amenities.includes(amenity);
+      const exists = prev.amenities.includes(amenity);
+
+      if (!exists && prev.amenities.length >= 50) {
+        setError('You can only select up to 50 amenities.');
+        return prev;
+      }
 
       return {
         ...prev,
         amenities: exists
-          ? prev.amenities.filter(
-            (item) => item !== amenity
-          )
+          ? prev.amenities.filter((item) => item !== amenity)
           : [...prev.amenities, amenity],
       };
     });
@@ -288,13 +298,26 @@ const AddProperty = () => {
       })
     );
 
-    setFormData((prev) => ({
-      ...prev,
-      images: [
-        ...prev.images,
-        ...imagePreviews,
-      ],
-    }));
+    setFormData((prev) => {
+      const remainingSlots = 10 - prev.images.length;
+      if (remainingSlots <= 0) {
+        setError('You can only upload a maximum of 10 images.');
+        return prev;
+      }
+
+      const allowedPreviews = imagePreviews.slice(0, remainingSlots);
+      if (imagePreviews.length > remainingSlots) {
+        setError('You can only upload a maximum of 10 images. Some images were discarded.');
+      }
+
+      return {
+        ...prev,
+        images: [
+          ...prev.images,
+          ...allowedPreviews,
+        ],
+      };
+    });
 
     event.target.value = '';
   };
@@ -476,6 +499,23 @@ const AddProperty = () => {
         return false;
       }
 
+      if (
+        formData.minDuration === '' ||
+        Number(formData.minDuration) < 1
+      ) {
+        setError('Minimum duration must be at least 1 month.');
+        return false;
+      }
+
+      if (
+        formData.maxDuration === '' ||
+        Number(formData.maxDuration) < 1 ||
+        Number(formData.maxDuration) < Number(formData.minDuration)
+      ) {
+        setError('Maximum duration must be at least 1 month and greater than or equal to minimum duration.');
+        return false;
+      }
+
       return true;
     }
 
@@ -540,6 +580,8 @@ const AddProperty = () => {
     formDataObj.append('securityDeposit', Number(formData.securityDeposit || 0));
     formDataObj.append('description', formData.description.trim());
     formDataObj.append('conditions', formData.conditions.trim());
+    formDataObj.append('minDuration', Number(formData.minDuration || 1));
+    formDataObj.append('maxDuration', Number(formData.maxDuration || 120));
 
     if (formData.landmark.trim()) {
       formDataObj.append('landmark', formData.landmark.trim());
@@ -1155,6 +1197,34 @@ const AddProperty = () => {
                     Unfurnished
                   </option>
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Min. Duration (Months) <span className="text-bad-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.minDuration}
+                  onChange={(e) => updateField('minDuration', e.target.value)}
+                  className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Max. Duration (Months) <span className="text-bad-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.maxDuration}
+                  onChange={(e) => updateField('maxDuration', e.target.value)}
+                  className="w-full px-4 py-2 bg-paper border border-border rounded-lg focus:outline-none focus:border-lease-500"
+                />
               </div>
             </div>
           </div>

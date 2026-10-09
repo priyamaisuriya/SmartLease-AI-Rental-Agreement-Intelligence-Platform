@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+function arrayLimit(limit) {
+    return function(val) {
+        return val.length <= limit;
+    };
+}
+
 const PropertySchema = new mongoose.Schema(
     {
         landlord: {
@@ -122,6 +128,7 @@ const PropertySchema = new mongoose.Schema(
         amenities: {
             type: [String],
             default: [],
+            validate: [arrayLimit(50), '{PATH} exceeds the limit of 50']
         },
 
         // -----------------------------
@@ -186,6 +193,7 @@ const PropertySchema = new mongoose.Schema(
         images: {
             type: [String],
             default: [],
+            validate: [arrayLimit(10), '{PATH} exceeds the limit of 10']
         },
 
         draftAgreement: {

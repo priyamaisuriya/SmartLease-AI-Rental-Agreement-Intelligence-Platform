@@ -150,6 +150,11 @@ const PropertyDetails = () => {
     setEndDate
   ] = useState('');
 
+  const [
+    acknowledgedConditions,
+    setAcknowledgedConditions
+  ] = useState(false);
+
   // ============================================================
   // CONDITIONS ANALYSIS
   // ============================================================
@@ -473,6 +478,14 @@ const PropertyDetails = () => {
         setBooking(true);
 
 
+        if (property.conditions && property.conditions.trim() !== '') {
+          if (!acknowledgedConditions) {
+            setBookingMessage('Please read and acknowledge the property conditions first.');
+            setBooking(false);
+            return;
+          }
+        }
+
         const response =
           await api.post(
             '/rentals/book',
@@ -482,7 +495,9 @@ const PropertyDetails = () => {
 
               startDate,
 
-              endDate
+              endDate,
+              
+              acknowledgedConditions
             }
           );
 
@@ -1840,6 +1855,23 @@ const PropertyDetails = () => {
                   </div>
 
                 )}
+
+
+              {/* ACKNOWLEDGE CONDITIONS CHECKBOX */}
+              {property.status === 'available' && !rentalLoading && property.conditions && property.conditions.trim() !== '' && (!rental || rental.status === 'cancelled' || rental.status === 'rejected') && (
+                <div className="mb-5 flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="acknowledge"
+                    checked={acknowledgedConditions}
+                    onChange={(e) => setAcknowledgedConditions(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-lease-600 focus:ring-lease-600 cursor-pointer"
+                  />
+                  <label htmlFor="acknowledge" className="text-sm text-ink-muted cursor-pointer leading-tight">
+                    I have read and agree to the property conditions and house rules.
+                  </label>
+                </div>
+              )}
 
 
               {/* BOOKING MESSAGE */}
