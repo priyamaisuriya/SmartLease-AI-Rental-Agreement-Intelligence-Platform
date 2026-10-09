@@ -4,6 +4,9 @@ const Rental = require('../models/Rental');
 const Agreement = require('../models/Agreement');
 const AIUsage = require('../models/AIUsage');
 const RentReminder = require('../models/RentReminder');
+const Payment = require('../models/Payment');
+const ActivityLog = require('../models/ActivityLog');
+const Notification = require('../models/Notification');
 
 const getAdminDashboard = async (req, res) => {
   try {
@@ -129,6 +132,19 @@ const getAdminDashboard = async (req, res) => {
     ]);
 
     return res.json({
+      monthlyRevenue,
+      recentActivity: recentActivity.map(a => ({
+        id: a._id,
+        user: a.user ? a.user.name : 'System',
+        desc: a.description || a.action,
+        time: a.createdAt
+      })),
+      platformAlerts: platformAlerts.map(a => ({
+        id: a._id,
+        type: a.title,
+        message: a.message,
+        severity: 'medium'
+      })),
       users: {
         total: totalUsers,
         active: activeUsers,

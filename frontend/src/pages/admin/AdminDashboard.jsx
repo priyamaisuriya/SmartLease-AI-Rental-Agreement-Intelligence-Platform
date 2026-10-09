@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { recentActivity as mockRecentActivity } from '../../data/adminMockData';
 import api from '../../services/api';
 
 const QuickActionCard = ({ title, desc, buttonText, icon, to }) => (
@@ -41,16 +40,11 @@ const AdminDashboard = () => {
     activeUsers: dashboardData?.users?.active || 0,
     totalProperties: dashboardData?.properties?.total || 0,
     totalAgreementsAnalyzed: dashboardData?.aiUsage?.successful || 0,
-    monthlyRevenue: '1,24,000', // Static placeholder
+    monthlyRevenue: dashboardData?.monthlyRevenue?.toLocaleString('en-IN') || '0',
   };
 
-  const platformAlerts = [
-    { id: 1, type: 'High Risk Agreement', message: 'Cedar Heights - Lease.pdf flagged with 4 high-risk clauses.', severity: 'high' },
-    { id: 2, type: 'System Performance', message: 'AI processing time increased by 1.2s average.', severity: 'medium' },
-    { id: 3, type: 'Server Update', message: 'Scheduled maintenance completed successfully.', severity: 'low' },
-  ];
-
-  const recentActivity = mockRecentActivity;
+  const platformAlerts = dashboardData?.platformAlerts || [];
+  const recentActivity = dashboardData?.recentActivity || [];
 
   return (
     <div className="fade-in space-y-6">
