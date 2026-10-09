@@ -22,6 +22,12 @@ const Chat = () => {
   const [agreements, setAgreements] = useState([]);
   const [selectedRentalId, setSelectedRentalId] = useState('');
 
+  // Standalone Document States
+  const [standaloneText, setStandaloneText] = useState('');
+  const [standaloneName, setStandaloneName] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
   const [loading, setLoading] = useState(true);
   const [loadingRentals, setLoadingRentals] = useState(false);
   const [sending, setSending] = useState(false);
@@ -318,34 +324,44 @@ const handleSend = async (customText = null) => {
     },
   ]);
 
-  try {
-    setSending(true);
+    try {
+      setSending(true);
 
-    const response = await api.post(
-      `/ai/agreements/${agreementId}/ask`,
-      {
-        question: text,
+      let response;
+      if (standaloneText) {
+        response = await api.post('/ai/chat', {
+          documentText: standaloneText,
+          question: text,
+          history: messages
+        });
+      } else {
+        response = await api.post(
+          `/ai/agreements/${agreementId}/ask`,
+          {
+            question: text,
+            history: messages
+          }
+        );
       }
-    );
 
-    console.log(
-      'AI answer:',
-      response.data
-    );
+      console.log(
+        'AI answer:',
+        response.data
+      );
 
-    const answer = getAIResponseText(
-      response.data
-    );
+      const answer = getAIResponseText(
+        response.data
+      );
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'assistant',
-        text:
-          answer ||
-          'I could not generate an answer for that question. Please try asking in a different way.',
-      },
-    ]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text:
+            answer ||
+            'I could not generate an answer for that question. Please try asking in a different way.',
+        },
+      ]);
 
   } catch (err) {
     console.error(
@@ -531,6 +547,44 @@ if (!agreementId) {
 
           </div>
 
+          {/* Upload Document Form */}
+          <div className="mt-8 border-t border-border pt-8">
+            <h2 className="font-display text-lg font-semibold text-ink mb-2">Or Upload a Document</h2>
+            <p className="text-sm text-text-muted mb-4">Upload a PDF or DOCX to chat directly with it.</p>
+            
+            <input 
+              type="file" 
+              accept=".pdf,.doc,.docx"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('document', file);
+                
+                try {
+                  setUploadingDoc(true);
+                  setUploadError('');
+                  const res = await api.post('/ai/chat/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                  });
+                  setStandaloneText(res.data.extractedText);
+                  setStandaloneName(file.name);
+                  setMessages([]);
+                } catch (err) {
+                  console.error('Upload failed:', err);
+                  setUploadError(err.response?.data?.message || 'Failed to upload and extract text.');
+                } finally {
+                  setUploadingDoc(false);
+                }
+              }}
+              disabled={uploadingDoc}
+              className="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-lease-50 file:text-lease-700 hover:file:bg-lease-100 disabled:opacity-50"
+            />
+            {uploadingDoc && <p className="mt-2 text-xs text-lease-600">Uploading and extracting text...</p>}
+            {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+          </div>
+
           {/* Selected rental information */}
           {selectedRentalId && (
             <div className="mt-4">
@@ -644,7 +698,7 @@ if (!agreementId) {
 // ERROR
 // =====================================================
 
-if (error && !agreement) {
+if (error && !agreement && !standaloneText) {
   return (
     <div className="fade-in">
 
@@ -715,22 +769,26 @@ return (
         </button>
 
         <p className="text-xs font-medium uppercase tracking-wide text-text-faint">
-          Agreement
+          Document
         </p>
 
         <div className="mt-2 rounded-lg bg-lease-50 p-3">
 
           <p className="text-sm font-medium text-ink">
-            {agreementTitle}
+            {standaloneText ? standaloneName : agreementTitle}
           </p>
+          
+          {!standaloneText && (
+            <>
+              <p className="mt-0.5 text-xs text-text-faint">
+                {propertyTitle}
+              </p>
 
-          <p className="mt-0.5 text-xs text-text-faint">
-            {propertyTitle}
-          </p>
-
-          <p className="mt-1 text-xs text-text-faint">
-            Landlord: {landlordName}
-          </p>
+              <p className="mt-1 text-xs text-text-faint">
+                Landlord: {landlordName}
+              </p>
+            </>
+          )}
 
         </div>
 
@@ -782,7 +840,7 @@ return (
 
             <div>
               <p className="font-display text-sm font-semibold text-ink">
-                Ask about {agreementTitle}
+                Ask about {standaloneText ? standaloneName : agreementTitle}
               </p>
 
               <p className="mt-1 text-xs text-text-faint">
@@ -791,15 +849,17 @@ return (
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                navigate(`/analysis/${agreementId}`)
-              }
-              className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-muted hover:bg-paper sm:block"
-            >
-              View Analysis
-            </button>
+            {!standaloneText && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/analysis/${agreementId}`)
+                }
+                className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-muted hover:bg-paper sm:block"
+              >
+                View Analysis
+              </button>
+            )}
 
           </div>
 

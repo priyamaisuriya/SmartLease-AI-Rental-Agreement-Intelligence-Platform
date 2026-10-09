@@ -23,6 +23,12 @@ const AiChat = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
 
+  // Standalone Document States
+  const [standaloneText, setStandaloneText] = useState('');
+  const [standaloneName, setStandaloneName] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -294,12 +300,22 @@ const AiChat = () => {
     setError('');
 
     try {
-      const response = await api.post(
-        `/ai/agreements/${agreementId}/ask`,
-        {
+      let response;
+      if (standaloneText) {
+        response = await api.post('/ai/chat', {
+          documentText: standaloneText,
           question,
-        }
-      );
+          history: messages,
+        });
+      } else {
+        response = await api.post(
+          `/ai/agreements/${agreementId}/ask`,
+          {
+            question,
+            history: messages,
+          }
+        );
+      }
 
       const answer =
         response.data?.answer ||
@@ -380,7 +396,7 @@ const AiChat = () => {
     );
   }
 
-  if (!agreementId) {
+  if (!agreementId && !standaloneText) {
     return (
       <div className="fade-in max-w-4xl mx-auto">
 
@@ -487,6 +503,44 @@ const AiChat = () => {
 
             </div>
           )}
+          
+          {/* Upload Document Form */}
+          <div className="mt-8 border-t border-border pt-8">
+            <h2 className="font-display text-lg font-semibold text-ink mb-2">Or Upload a Document</h2>
+            <p className="text-sm text-text-muted mb-4">Upload a PDF or DOCX to chat directly with it.</p>
+            
+            <input 
+              type="file" 
+              accept=".pdf,.doc,.docx"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('document', file);
+                
+                try {
+                  setUploadingDoc(true);
+                  setUploadError('');
+                  const res = await api.post('/ai/chat/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                  });
+                  setStandaloneText(res.data.extractedText);
+                  setStandaloneName(file.name);
+                  setMessages([]);
+                } catch (err) {
+                  console.error('Upload failed:', err);
+                  setUploadError(err.response?.data?.message || 'Failed to upload and extract text.');
+                } finally {
+                  setUploadingDoc(false);
+                }
+              }}
+              disabled={uploadingDoc}
+              className="block w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-lease-50 file:text-lease-700 hover:file:bg-lease-100 disabled:opacity-50"
+            />
+            {uploadingDoc && <p className="mt-2 text-xs text-lease-600">Uploading and extracting text...</p>}
+            {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+          </div>
 
         </div>
 
@@ -568,7 +622,7 @@ const AiChat = () => {
 
           </h1>
 
-          {agreement && (
+          {agreement && !standaloneText && (
             <div className="flex items-center gap-1.5 mt-1 text-xs text-text-muted">
 
               <FileText className="w-3.5 h-3.5" />
@@ -577,6 +631,17 @@ const AiChat = () => {
                 {agreement.title ||
                   agreement.originalFileName ||
                   'Rental Agreement'}
+              </span>
+
+            </div>
+          )}
+          {standaloneText && (
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-text-muted">
+
+              <FileText className="w-3.5 h-3.5" />
+
+              <span className="truncate max-w-[400px]">
+                {standaloneName}
               </span>
 
             </div>

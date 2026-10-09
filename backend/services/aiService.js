@@ -232,7 +232,8 @@ ${agreementText}
 
 const answerAgreementQuestion = async (
     agreementText,
-    question
+    question,
+    chatHistory = []
 ) => {
     if (!agreementText || !agreementText.trim()) {
         throw new Error(
@@ -244,6 +245,11 @@ const answerAgreementQuestion = async (
         throw new Error(
             'Question is required'
         );
+    }
+
+    let historyText = '';
+    if (chatHistory && chatHistory.length > 0) {
+        historyText = "Previous Conversation History:\n" + chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'SmartLease AI'}: ${msg.content}`).join('\n') + "\n\n";
     }
 
     const prompt = `
@@ -261,7 +267,7 @@ Do not invent facts.
 
 Keep the answer clear and practical.
 
-User Question:
+${historyText}User Question:
 
 ${question}
 

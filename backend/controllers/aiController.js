@@ -506,8 +506,7 @@ const askAgreementQuestion = async (
             return;
         }
 
-        const { question } =
-            req.body;
+        const { question, history } = req.body;
 
         if (
             !question ||
@@ -522,7 +521,8 @@ const askAgreementQuestion = async (
         const answer =
             await answerAgreementQuestion(
                 agreement.extractedText,
-                question
+                question,
+                history || []
             );
 
         const analysis =
@@ -869,12 +869,12 @@ const uploadChatDocument = async (req, res) => {
 // =====================================================
 const chatWithDocument = async (req, res) => {
     try {
-        const { documentText, question } = req.body;
+        const { documentText, question, history } = req.body;
         if (!documentText || !question) {
             return res.status(400).json({ message: 'Document text and question are required' });
         }
         
-        const answer = await answerAgreementQuestion(documentText, question);
+        const answer = await answerAgreementQuestion(documentText, question, history || []);
         
         return res.json({ answer });
     } catch (err) {
