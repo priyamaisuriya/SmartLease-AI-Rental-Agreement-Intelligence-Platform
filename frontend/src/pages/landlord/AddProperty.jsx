@@ -170,6 +170,12 @@ const AddProperty = () => {
           description:
             property.description || '',
 
+          conditions:
+            property.conditions || '',
+
+          draftAgreement:
+            property.draftAgreement ? { name: property.draftAgreement.split('/').pop(), isExisting: true, path: property.draftAgreement } : null,
+
           address:
             property.address || '',
 
@@ -563,27 +569,27 @@ const AddProperty = () => {
   const buildPayload = () => {
     const formDataObj = new FormData();
     
-    formDataObj.append('title', formData.title.trim());
+    formDataObj.append('title', (formData.title || '').trim());
     formDataObj.append('propertyType', formData.propertyType);
-    formDataObj.append('address', formData.address.trim());
-    formDataObj.append('city', formData.city.trim());
-    formDataObj.append('state', formData.state.trim());
-    formDataObj.append('pincode', formData.pincode.trim());
+    formDataObj.append('address', (formData.address || '').trim());
+    formDataObj.append('city', (formData.city || '').trim());
+    formDataObj.append('state', (formData.state || '').trim());
+    formDataObj.append('pincode', (formData.pincode || '').trim());
     const isHousing = ['apartment', 'house', 'villa'].includes(formData.propertyType);
     formDataObj.append('bedrooms', isHousing ? Number(formData.bedrooms || 0) : 0);
     if (formData.propertyType === 'other') {
-      formDataObj.append('customPropertyType', formData.customPropertyType.trim());
+      formDataObj.append('customPropertyType', (formData.customPropertyType || '').trim());
     }
     formDataObj.append('area', Number(formData.area || 0));
     formDataObj.append('furnishing', formData.furnishing);
     formDataObj.append('monthlyRent', Number(formData.monthlyRent || 0));
     formDataObj.append('securityDeposit', Number(formData.securityDeposit || 0));
-    formDataObj.append('description', formData.description.trim());
-    formDataObj.append('conditions', formData.conditions.trim());
+    formDataObj.append('description', (formData.description || '').trim());
+    formDataObj.append('conditions', (formData.conditions || '').trim());
     formDataObj.append('minDuration', Number(formData.minDuration || 1));
     formDataObj.append('maxDuration', Number(formData.maxDuration || 120));
 
-    if (formData.landmark.trim()) {
+    if (formData.landmark && formData.landmark.trim()) {
       formDataObj.append('landmark', formData.landmark.trim());
     }
 
@@ -605,7 +611,7 @@ const AddProperty = () => {
        }
     });
 
-    if (formData.draftAgreement) {
+    if (formData.draftAgreement && !formData.draftAgreement.isExisting) {
       formDataObj.append('draftAgreement', formData.draftAgreement);
     }
 
