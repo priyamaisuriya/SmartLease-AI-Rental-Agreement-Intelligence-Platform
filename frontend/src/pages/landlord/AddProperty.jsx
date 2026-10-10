@@ -174,7 +174,7 @@ const AddProperty = () => {
             property.conditions || '',
 
           draftAgreement:
-            property.draftAgreement ? { name: property.draftAgreement.split('/').pop(), isExisting: true, path: property.draftAgreement } : null,
+            property.draftAgreement ? { name: typeof property.draftAgreement === 'string' ? property.draftAgreement.split('/').pop() : (property.draftAgreement.name || 'Draft Agreement'), isExisting: true, path: property.draftAgreement } : null,
 
           address:
             property.address || '',
