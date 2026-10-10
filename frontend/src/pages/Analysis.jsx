@@ -927,13 +927,13 @@ const Analysis = () => {
 
         <div>
 
-          <h1 className="font-display text-2xl font-semibold text-ink">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-lease-600 to-signal-600">
             {agreement?.title ||
               agreement?.originalFileName ||
               'Rental Agreement'}
           </h1>
 
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-2 text-sm font-medium text-text-muted">
 
             {property?.title ||
               'Rental Agreement'}
@@ -970,9 +970,10 @@ const Analysis = () => {
             onClick={() =>
               navigate(`/chat/${agreementId}`)
             }
-            className="rounded-lg bg-signal-500 px-4 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-signal-600"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-signal-500 to-signal-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-signal-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:from-signal-600 hover:to-signal-700"
           >
-            Ask AI about this agreement
+            <span>Ask AI about this agreement</span>
+            <span className="text-lg leading-none">✨</span>
           </button>
 
         </div>
@@ -980,7 +981,7 @@ const Analysis = () => {
       </div>
 
       {/* Agreement information */}
-      <div className="mt-6 rounded-xl2 border border-border bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-lease-200 hover:shadow-md">
 
         <p className="font-display text-base font-semibold text-ink">
           Agreement information
@@ -1037,11 +1038,11 @@ const Analysis = () => {
       </div>
 
       {/* Overall Risk */}
-      <div className="mt-6 rounded-xl2 border border-border bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-lease-200 hover:shadow-md">
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
 
-          <div className="grid h-28 w-28 shrink-0 place-items-center rounded-full border-8 border-border">
+          <div className="grid h-28 w-28 shrink-0 place-items-center rounded-full border-8 border-border bg-gradient-to-br from-white to-paper shadow-inner transition-transform duration-500 hover:scale-105 hover:border-lease-200">
 
             <div className="text-center">
 
@@ -1096,7 +1097,7 @@ const Analysis = () => {
       </div>
 
       {/* AI Summary */}
-      <div className="mt-6 rounded-xl2 border border-border bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-lease-200 hover:shadow-md">
 
         <div className="flex flex-wrap items-center justify-between gap-3">
 
@@ -1148,7 +1149,7 @@ const Analysis = () => {
 
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Monthly Rent
@@ -1163,7 +1164,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Security Deposit
@@ -1178,7 +1179,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Property Type
@@ -1191,7 +1192,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Agreement Status
@@ -1217,7 +1218,7 @@ const Analysis = () => {
 
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Rental Start
@@ -1231,7 +1232,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Rental End
@@ -1245,7 +1246,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Booking Date
@@ -1259,7 +1260,7 @@ const Analysis = () => {
 
           </div>
 
-          <div className="rounded-xl2 border border-border bg-white p-4">
+          <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lease-200 hover:shadow-md">
 
             <p className="text-xs text-text-faint">
               Rental Status
@@ -1329,7 +1330,7 @@ const Analysis = () => {
       </div>
 
       {/* Extracted Agreement Text */}
-      <div className="mt-6 rounded-xl2 border border-border bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-lease-200 hover:shadow-md">
 
         <p className="font-display text-base font-semibold text-ink">
           Agreement document
@@ -1356,7 +1357,7 @@ const Analysis = () => {
       </div>
 
       {/* AI Clause Explanation */}
-      <div className="mt-6 rounded-xl2 border border-border bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-lease-200 hover:shadow-md">
 
         <div className="mb-5">
 
@@ -1389,7 +1390,7 @@ const Analysis = () => {
             placeholder="Example: The tenant shall provide 30 days written notice before termination..."
             rows={5}
             disabled={!hasExtractedText}
-            className="w-full rounded-xl border border-border bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl border border-border/80 bg-paper/50 px-5 py-4 text-sm text-ink outline-none transition-all duration-300 hover:border-lease-300 focus:border-lease-500 focus:bg-white focus:ring-4 focus:ring-lease-500/10 disabled:cursor-not-allowed disabled:opacity-60"
           />
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -1449,7 +1450,7 @@ const Analysis = () => {
               !selectedClause.trim() ||
               !hasExtractedText
             }
-            className="mt-4 rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-ink to-ink-muted px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-ink/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
           >
             {clauseLoading
               ? 'AI is analyzing...'
@@ -1488,7 +1489,7 @@ const Analysis = () => {
       </div>
 
       {/* AI Actions */}
-      <div className="mt-6 rounded-xl2 border border-border bg-lease-50/60 p-6">
+      <div className="mt-6 rounded-2xl border border-lease-200/60 bg-gradient-to-br from-lease-50 to-white p-7 shadow-sm transition-all duration-300 hover:shadow-md hover:border-lease-300">
 
         <p className="font-display text-base font-semibold text-ink">
           AI agreement intelligence

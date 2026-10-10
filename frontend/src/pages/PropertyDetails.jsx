@@ -1046,10 +1046,24 @@ const PropertyDetails = () => {
           err
         );
 
-        setInvoiceMessage(
-          err.response?.data?.message ||
-          'Invoice download is not available yet.'
-        );
+        let errorMessage = 'Invoice download is not available yet.';
+
+        if (
+          err.response?.data instanceof Blob &&
+          err.response.data.type === 'application/json'
+        ) {
+          try {
+            const text = await err.response.data.text();
+            const json = JSON.parse(text);
+            errorMessage = json.message || errorMessage;
+          } catch (e) {
+            // Ignore parse error
+          }
+        } else if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        }
+
+        setInvoiceMessage(errorMessage);
 
       } finally {
 
