@@ -314,6 +314,13 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*(),.?":{}|<>_\\-+=;']/.test(password)) {
+      return res.status(400).json({
+        message:
+          'Password must contain at least one uppercase, lowercase, number, and special character.'
+      });
+    }
+
     if (
       !['tenant', 'landlord'].includes(role)
     ) {
