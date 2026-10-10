@@ -18,6 +18,7 @@ const QuickActionCard = ({ title, desc, buttonText, icon, to }) => (
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -26,10 +27,12 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await api.get('/admin/dashboard');
       setDashboardData(res.data);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
+      setError(err.response?.data?.message || 'Failed to load dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -48,6 +51,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="fade-in space-y-6">
+      {error && (
+        <div className="flex items-center justify-between p-3 text-sm rounded-lg text-risk-red bg-risk-red-bg">
+          <span>{error}</span>
+          <button onClick={fetchDashboardData} className="font-semibold underline">Retry</button>
+        </div>
+      )}
       {/* KPI Grid */}
       {loading ? (
         <div className="flex justify-center items-center py-20 bg-border border border-border rounded-[8px] mb-[26px]">
@@ -66,14 +75,14 @@ const AdminDashboard = () => {
           <span className="font-mono text-[11.5px] text-text-faint">Platform-wide</span>
         </div>
         <div className="bg-white p-[22px]">
-          <span className="font-mono text-[10.5px] tracking-[0.1em] text-text-muted uppercase block font-semibold">AI Analyses</span>
+          <span className="font-mono text-[10.5px] tracking-[0.1em] text-text-muted uppercase block font-semibold">AI Requests</span>
           <div className="font-serif text-[36px] font-medium my-[8px] text-ink">{kpis.totalAgreementsAnalyzed}</div>
-          <span className="font-mono text-[11.5px] text-text-faint">Agreements processed</span>
+          <span className="font-mono text-[11.5px] text-text-faint">Successful, all time</span>
         </div>
         <div className="bg-white p-[22px]">
-          <span className="font-mono text-[10.5px] tracking-[0.1em] text-text-muted uppercase block font-semibold">Platform Revenue</span>
+          <span className="font-mono text-[10.5px] tracking-[0.1em] text-text-muted uppercase block font-semibold">Payments Received</span>
           <div className="font-serif text-[36px] font-medium my-[8px] text-ink">₹{kpis.monthlyRevenue}</div>
-          <span className="font-mono text-[11.5px] text-text-faint">Monthly recurring</span>
+          <span className="font-mono text-[11.5px] text-text-faint">This month (rent + deposit)</span>
         </div>
       </div>
       )}

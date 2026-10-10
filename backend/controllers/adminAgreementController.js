@@ -2,6 +2,47 @@ const mongoose = require('mongoose');
 
 const Agreement = require('../models/Agreement');
 const AgreementAnalysis = require('../models/AgreementAnalysis');
+const Rental = require('../models/Rental');
+
+const path = require('path');
+
+const { createActivityLog } = require('../services/activityLogService');
+const { removeFile } = require('../utils/fileSignature');
+const { escapeRegex } = require('../utils/dates');
+
+const AGREEMENT_STATUSES = ['draft', 'active', 'expired', 'terminated'];
+
+// Once payment has started the agreement is part of the booking record.
+const LOCKED_RENTAL_STATUSES = [
+    'payment_pending',
+    'payment_success',
+    'confirmed',
+    'active',
+    'completed'
+];
+
+const isLockedByRental = (agreement) =>
+    agreement.rental
+        ? Rental.exists({ _id: agreement.rental, status: { $in: LOCKED_RENTAL_STATUSES } })
+        : null;
+
+const logAdminAction = async (req, action, description, agreement) => {
+    try {
+        await createActivityLog({
+            userId: req.user.id,
+            action,
+            module: 'agreement',
+            description,
+            targetType: 'Agreement',
+            targetId: agreement._id,
+            metadata: { rentalId: agreement.rental, status: agreement.status },
+            req,
+            status: 'success'
+        });
+    } catch (e) {
+        console.error('Activity log failed:', e.message);
+    }
+};
 
 
 // =====================================================
@@ -15,6 +56,7 @@ const getAllAgreements = async (req, res) => {
             status,
             landlordId,
             tenantId,
+            search,
             page = 1,
             limit = 20
         } = req.query;
@@ -32,7 +74,18 @@ const getAllAgreements = async (req, res) => {
         const filter = {};
 
         if (status) {
+            if (!AGREEMENT_STATUSES.includes(status)) {
+                return res.status(400).json({
+                    message: 'Invalid status filter'
+                });
+            }
+
             filter.status = status;
+        }
+
+        if (typeof search === 'string' && search.trim()) {
+            const re = new RegExp(escapeRegex(search.trim().slice(0, 100)), 'i');
+            filter.$or = [{ title: re }, { originalFileName: re }];
         }
 
         if (landlordId) {
@@ -82,14 +135,35 @@ const getAllAgreements = async (req, res) => {
                 .sort({
                     createdAt: -1
                 })
+                .select('-extractedText')
                 .skip(skip)
                 .limit(currentLimit),
 
             Agreement.countDocuments(filter)
         ]);
 
+        // Real AI analysis counts per agreement on this page (by analysis type).
+        const analysisRows = agreements.length
+            ? await AgreementAnalysis.aggregate([
+                { $match: { agreement: { $in: agreements.map((a) => a._id) } } },
+                { $group: { _id: { agreement: '$agreement', type: '$type' }, count: { $sum: 1 } } }
+            ])
+            : [];
+
+        const analysisByAgreement = {};
+        analysisRows.forEach((row) => {
+            const key = String(row._id.agreement);
+            analysisByAgreement[key] = analysisByAgreement[key] || {};
+            analysisByAgreement[key][row._id.type] = row.count;
+        });
+
+        const agreementsWithAnalyses = agreements.map((a) => ({
+            ...a.toObject(),
+            analyses: analysisByAgreement[String(a._id)] || {}
+        }));
+
         return res.json({
-            agreements,
+            agreements: agreementsWithAnalyses,
             pagination: {
                 page: currentPage,
                 limit: currentLimit,
@@ -278,9 +352,22 @@ const terminateAgreement = async (req, res) => {
             });
         }
 
+        if (await isLockedByRental(agreement)) {
+            return res.status(400).json({
+                message: 'This agreement belongs to a rental that is already in payment or booked and cannot be terminated'
+            });
+        }
+
         agreement.status = 'terminated';
 
         await agreement.save();
+
+        await logAdminAction(
+            req,
+            'ADMIN_AGREEMENT_TERMINATED',
+            `Admin terminated agreement "${agreement.title}"`,
+            agreement
+        );
 
         return res.json({
             message: 'Agreement terminated successfully',
@@ -323,10 +410,31 @@ const deleteAgreement = async (req, res) => {
             });
         }
 
+        if (await isLockedByRental(agreement)) {
+            return res.status(400).json({
+                message: 'This agreement belongs to a rental that is already in payment or booked and cannot be deleted'
+            });
+        }
+
         // Also delete associated analyses
         await AgreementAnalysis.deleteMany({ agreement: id });
 
+        const storedFile = agreement.fileUrl
+            ? path.join(__dirname, '../uploads/agreements', path.basename(agreement.fileUrl))
+            : null;
+
         await agreement.deleteOne();
+
+        if (storedFile) {
+            removeFile(storedFile);
+        }
+
+        await logAdminAction(
+            req,
+            'ADMIN_AGREEMENT_DELETED',
+            `Admin deleted agreement "${agreement.title}"`,
+            agreement
+        );
 
         return res.json({
             message: 'Agreement deleted successfully'

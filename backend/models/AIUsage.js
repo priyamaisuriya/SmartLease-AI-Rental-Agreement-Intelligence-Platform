@@ -22,7 +22,9 @@ const AIUsageSchema = new mongoose.Schema(
         'summary',
         'clause_explanation',
         'risk_detection',
-        'question'
+        'question',
+        'conditions_analysis',
+        'document_chat'
       ],
       required: true,
     },

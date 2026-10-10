@@ -15,6 +15,44 @@ const AdminProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMessage, setPwMessage] = useState('');
+  const [pwError, setPwError] = useState('');
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwMessage('');
+    setPwError('');
+
+    if (!pw.currentPassword || !pw.newPassword) {
+      setPwError('Please fill in all password fields.');
+      return;
+    }
+    if (pw.newPassword.length < 8) {
+      setPwError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (pw.newPassword !== pw.confirm) {
+      setPwError('New password and confirmation do not match.');
+      return;
+    }
+
+    try {
+      setPwSaving(true);
+      const res = await api.put('/auth/change-password', {
+        currentPassword: pw.currentPassword,
+        newPassword: pw.newPassword,
+      });
+      setPwMessage(res.data.message || 'Password updated successfully.');
+      setPw({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) {
+      setPwError(err.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
   
   const getInitial = () => {
     if (user?.name) {
@@ -184,6 +222,35 @@ const AdminProfile = () => {
               </div>
             </div>
           )}
+
+          <form onSubmit={handleChangePassword} className="mt-10 pt-6 border-t border-border max-w-md space-y-4">
+            <h3 className="font-semibold text-ink">Change Password</h3>
+            {pwMessage && <div className="p-3 text-sm rounded-lg text-green-700 bg-green-50">{pwMessage}</div>}
+            {pwError && <div className="p-3 text-sm rounded-lg text-risk-red bg-risk-red-bg">{pwError}</div>}
+            {[
+              ['currentPassword', 'Current password', 'current-password'],
+              ['newPassword', 'New password (min. 8 characters)', 'new-password'],
+              ['confirm', 'Confirm new password', 'new-password'],
+            ].map(([field, label, auto]) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-text-muted mb-1">{label}</label>
+                <input
+                  type="password"
+                  autoComplete={auto}
+                  value={pw[field]}
+                  onChange={(e) => setPw((p) => ({ ...p, [field]: e.target.value }))}
+                  className="w-full px-3 py-2 bg-paper border border-border rounded-lg text-sm focus:outline-none focus:border-lease-500"
+                />
+              </div>
+            ))}
+            <button
+              type="submit"
+              disabled={pwSaving}
+              className="px-4 py-2 bg-lease-600 text-white rounded-lg text-sm font-medium hover:bg-lease-700 disabled:opacity-60"
+            >
+              {pwSaving ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
 
         </div>
       </div>

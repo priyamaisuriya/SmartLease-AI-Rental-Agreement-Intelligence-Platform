@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const User = require('../models/User');
+const { getJwtSecret } = require('../utils/jwtSecret');
+const { getSettings } = require('../services/settingsService');
+const { notifyAdmins } = require('../services/notificationService');
 const EmailVerification = require('../models/EmailVerification');
 const auth = require('../middleware/auth');
 
@@ -19,7 +22,7 @@ const {
 // ============================================================
 
 const createToken = (user) => {
-  const secret = process.env.JWT_SECRET || 'secret123';
+  const secret = getJwtSecret();
 
   const payload = {
     user: {
@@ -32,7 +35,7 @@ const createToken = (user) => {
     payload,
     secret,
     {
-      expiresIn: '5h'
+      expiresIn: `${getSettings().sessionTimeoutMinutes}m`
     }
   );
 };
@@ -347,6 +350,12 @@ router.post('/register', async (req, res) => {
 
     await EmailVerification.deleteOne({
       email: normalizedEmail
+    });
+
+    await notifyAdmins({
+      title: `New ${user.role} registered: ${user.name}`,
+      message: `${user.name} (${user.email}) created a ${user.role} account.`,
+      type: 'system'
     });
 
     const token =

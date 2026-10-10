@@ -645,7 +645,7 @@ const PropertyDetails = () => {
       // --------------------------------------------------------
 
       if (
-        rental.status !== 'agreement_accepted' && rental.status !== 'active'
+        rental.status !== 'agreement_accepted' && rental.status !== 'payment_pending'
       ) {
 
         setPaymentMessage(
@@ -2000,7 +2000,7 @@ const PropertyDetails = () => {
                   View Agreement
                 </button>
 
-              ) : rental?.status === 'agreement_accepted' && payment?.paymentStatus !== 'paid' ? (
+              ) : (rental?.status === 'agreement_accepted' || rental?.status === 'payment_pending') && payment?.paymentStatus !== 'paid' ? (
 
                 <button
                   onClick={
@@ -2030,7 +2030,7 @@ const PropertyDetails = () => {
 
                 </button>
 
-              ) : (rental?.status === 'payment_success' || (rental?.status === 'agreement_accepted' && payment?.paymentStatus === 'paid')) ? (
+              ) : (rental?.status === 'payment_success' || ((rental?.status === 'agreement_accepted' || rental?.status === 'payment_pending') && payment?.paymentStatus === 'paid')) ? (
 
                 <div className="flex flex-col gap-3">
                   <button
@@ -2111,7 +2111,7 @@ const PropertyDetails = () => {
                   ? 'Your booking is confirmed.'
                   : (rental?.status === 'payment_success')
                     ? 'Payment successful. Please confirm your booking.'
-                    : (rental?.status === 'agreement_accepted')
+                    : (rental?.status === 'agreement_accepted' || rental?.status === 'payment_pending')
                       ? 'Payment is required to complete your booking.'
                       : (rental?.status === 'agreement_pending')
                         ? 'Please review and accept the official agreement from the landlord before paying.'

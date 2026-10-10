@@ -50,8 +50,40 @@ const markAllAsRead = async (req, res) => {
     }
 };
 
+// Delete a single notification
+const deleteNotification = async (req, res) => {
+    try {
+        const deleted = await Notification.findOneAndDelete({
+            _id: req.params.id,
+            user: req.user.id
+        });
+
+        if (!deleted) {
+            return res.status(404).json({ message: 'Notification not found' });
+        }
+
+        res.status(200).json({ message: 'Notification deleted' });
+    } catch (error) {
+        console.error('Error deleting notification:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Delete all of the user's notifications
+const clearAllNotifications = async (req, res) => {
+    try {
+        await Notification.deleteMany({ user: req.user.id });
+        res.status(200).json({ message: 'All notifications cleared' });
+    } catch (error) {
+        console.error('Error clearing notifications:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getMyNotifications,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications
 };

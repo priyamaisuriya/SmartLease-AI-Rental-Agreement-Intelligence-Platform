@@ -1,4 +1,5 @@
 const ActivityLog = require('../models/ActivityLog');
+const { escapeRegex } = require('../utils/dates');
 
 const getActivityLogs = async (req, res) => {
   try {
@@ -8,11 +9,33 @@ const getActivityLogs = async (req, res) => {
       status,
       userId,
       targetType,
+      search,
+      from,
+      to,
       page = 1,
       limit = 25
     } = req.query;
 
     const filter = {};
+
+    if (typeof search === 'string' && search.trim()) {
+      const re = new RegExp(escapeRegex(search.trim().slice(0, 100)), 'i');
+      filter.$or = [{ description: re }, { action: re }, { module: re }];
+    }
+
+    // Optional date range (YYYY-MM-DD, inclusive of the "to" day).
+    const fromDate = typeof from === 'string' ? new Date(from) : null;
+    const toDate = typeof to === 'string' ? new Date(to) : null;
+
+    if ((fromDate && !Number.isNaN(fromDate.getTime())) || (toDate && !Number.isNaN(toDate.getTime()))) {
+      filter.createdAt = {};
+      if (fromDate && !Number.isNaN(fromDate.getTime())) {
+        filter.createdAt.$gte = fromDate;
+      }
+      if (toDate && !Number.isNaN(toDate.getTime())) {
+        filter.createdAt.$lt = new Date(toDate.getTime() + 24 * 60 * 60 * 1000);
+      }
+    }
 
     if (action) {
       filter.action = action;
@@ -27,6 +50,10 @@ const getActivityLogs = async (req, res) => {
     }
 
     if (userId) {
+      if (!require('mongoose').Types.ObjectId.isValid(String(userId))) {
+        return res.status(400).json({ message: 'Invalid userId' });
+      }
+
       filter.user = userId;
     }
 

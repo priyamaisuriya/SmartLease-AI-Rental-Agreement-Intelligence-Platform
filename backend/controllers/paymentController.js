@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const Payment = require('../models/Payment');
 const Rental = require('../models/Rental');
@@ -13,6 +14,62 @@ const {
 const {
   sendInvoiceEmail
 } = require('../services/emailService');
+
+const Agreement = require('../models/Agreement');
+
+const {
+  createNotification
+} = require('../services/notificationService');
+
+const {
+  overlapFilter
+} = require('../utils/dates');
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+// No real payment provider is integrated. The simulated gateway must be
+// switched on explicitly (PAYMENT_MODE=mock) and is never available in production.
+const mockPaymentsEnabled = () =>
+  process.env.PAYMENT_MODE === 'mock' &&
+  process.env.NODE_ENV !== 'production';
+
+const findConfirmedClash = (rental) =>
+  Rental.findOne({
+    property: rental.property,
+    _id: { $ne: rental._id },
+    status: { $in: ['confirmed', 'active'] },
+    ...overlapFilter(rental.startDate, rental.endDate)
+  });
+
+// The tenant must have accepted the landlord's CURRENT agreement version.
+const checkAgreementAccepted = async (rental) => {
+
+  const agreement =
+    await Agreement.findOne({
+      rental: rental._id,
+      status: 'active'
+    }).sort({ version: -1 });
+
+  if (!agreement) {
+    return {
+      ok: false,
+      message: 'No rental agreement has been uploaded for this request.'
+    };
+  }
+
+  if (rental.acceptedAgreementVersion !== agreement.version) {
+    return {
+      ok: false,
+      message: 'Please accept the latest version of the rental agreement before paying.'
+    };
+  }
+
+  return { ok: true, agreement };
+
+};
 
 
 // ============================================================
@@ -75,12 +132,43 @@ const createPaymentOrder = async (req, res) => {
     // PAYMENT ONLY AFTER LANDLORD APPROVAL
     // --------------------------------------------------------
 
+    if (!mockPaymentsEnabled()) {
+
+      return res.status(503).json({
+        message: 'Online payments are not configured. Please contact support.'
+      });
+
+    }
+
     if (
-      rental.status !== 'agreement_accepted' && rental.status !== 'active'
+      rental.status !== 'agreement_accepted' &&
+      rental.status !== 'payment_pending'
     ) {
 
       return res.status(400).json({
-        message: 'Payment is available only after you accept the agreement.'
+        message: 'Payment is available only after the landlord accepts your request, uploads the agreement and you accept the current agreement.'
+      });
+
+    }
+
+    const agreementCheck =
+      await checkAgreementAccepted(rental);
+
+    if (!agreementCheck.ok) {
+
+      return res.status(400).json({
+        message: agreementCheck.message
+      });
+
+    }
+
+    const clash =
+      await findConfirmedClash(rental);
+
+    if (clash) {
+
+      return res.status(409).json({
+        message: 'These dates have just been booked by another tenant.'
       });
 
     }
@@ -187,6 +275,8 @@ const createPaymentOrder = async (req, res) => {
           .toUpperCase()}`;
 
 
+      try {
+
       payment =
         await Payment.create({
 
@@ -219,6 +309,36 @@ const createPaymentOrder = async (req, res) => {
             'mock_card'
 
         });
+
+      } catch (createError) {
+
+        // A concurrent request already created the open order: reuse it.
+        if (createError && createError.code === 11000) {
+
+          payment =
+            await Payment.findOne({
+              rental: rental._id,
+              tenant: userId,
+              paymentStatus: { $in: ['created', 'pending'] }
+            });
+
+        }
+
+        if (!payment) {
+          throw createError;
+        }
+
+      }
+
+    }
+
+
+    if (rental.status === 'agreement_accepted') {
+
+      await Rental.findOneAndUpdate(
+        { _id: rental._id, status: 'agreement_accepted' },
+        { $set: { status: 'payment_pending' } }
+      );
 
     }
 
@@ -291,7 +411,15 @@ const processMockPayment = async (req, res) => {
     // VALIDATION
     // --------------------------------------------------------
 
-    if (!paymentId) {
+    if (!mockPaymentsEnabled()) {
+
+      return res.status(503).json({
+        message: 'Online payments are not configured. Please contact support.'
+      });
+
+    }
+
+    if (!paymentId || !mongoose.Types.ObjectId.isValid(paymentId)) {
 
       return res.status(400).json({
         message: 'Payment ID is required.'
@@ -406,13 +534,36 @@ const processMockPayment = async (req, res) => {
 
     if (result === 'failed') {
 
-      payment.paymentStatus =
-        'failed';
+      // A failed attempt leaves the rental in payment_pending so the tenant can retry.
+      const failed =
+        await Payment.findOneAndUpdate(
+          {
+            _id: payment._id,
+            paymentStatus: { $in: ['created', 'pending', 'failed'] }
+          },
+          {
+            $set: {
+              paymentStatus: 'failed',
+              paymentMethod
+            }
+          },
+          { new: true }
+        );
 
-      payment.paymentMethod =
-        paymentMethod;
+      if (failed) {
 
-      await payment.save();
+        payment.set(failed.toObject());
+
+        await createNotification({
+          user: payment.tenant,
+          title: 'Payment Failed',
+          message: 'Your payment could not be completed. You have not been charged; please try again.',
+          type: 'payment_update',
+          relatedEntityModel: 'Rental',
+          relatedEntityId: payment.rental
+        });
+
+      }
 
 
       return res.status(200).json({
@@ -436,42 +587,162 @@ const processMockPayment = async (req, res) => {
 
     // ========================================================
     // SUCCESSFUL PAYMENT
+    // The amount always comes from the stored payment record and the
+    // rental; nothing the client sends changes what is charged.
     // ========================================================
-
-    payment.paymentStatus =
-      'paid';
-
-    payment.paymentMethod =
-      paymentMethod;
-
-    payment.paidAt =
-      new Date();
-
-
-    await payment.save();
-
-
-    // --------------------------------------------------------
-    // FIND RENTAL
-    // --------------------------------------------------------
 
     const rental =
       await Rental.findById(
         payment.rental
       );
 
-
     if (!rental) {
 
+      return res.status(404).json({
+        message: 'Rental not found for this payment.'
+      });
+
+    }
+
+    if (
+      rental.status !== 'payment_pending' &&
+      rental.status !== 'agreement_accepted'
+    ) {
+
+      return res.status(400).json({
+        message: `Payment cannot be processed while the rental is ${rental.status}.`
+      });
+
+    }
+
+    const agreementCheck =
+      await checkAgreementAccepted(rental);
+
+    if (!agreementCheck.ok) {
+
+      return res.status(400).json({
+        message: agreementCheck.message
+      });
+
+    }
+
+    const expectedAmount =
+      Number(rental.monthlyRent || 0) +
+      Number(rental.securityDeposit || 0);
+
+    if (payment.amount !== expectedAmount) {
+
+      return res.status(409).json({
+        message: 'The payable amount has changed. Please start the payment again.'
+      });
+
+    }
+
+    if (await findConfirmedClash(rental)) {
+
+      const conflicted =
+        await Rental.findOneAndUpdate(
+          {
+            _id: rental._id,
+            status: { $in: ['payment_pending', 'agreement_accepted'] }
+          },
+          {
+            $set: {
+              status: 'conflict',
+              rejectionReason: 'Property confirmed by another tenant.'
+            }
+          },
+          { new: true }
+        );
+
+      if (conflicted) {
+
+        await createNotification({
+          user: rental.tenant,
+          title: 'Date Conflict Detected',
+          message: 'These dates were booked by another tenant before your payment was taken. You have not been charged.',
+          type: 'payment_update',
+          relatedEntityModel: 'Rental',
+          relatedEntityId: rental._id
+        });
+
+      }
+
+      return res.status(409).json({
+        message: 'These dates have just been booked by another tenant. You have not been charged.'
+      });
+
+    }
+
+    // Atomic claim: only one concurrent request can move this payment to paid,
+    // so a double click or retry can never create two paid records.
+    const claimed =
+      await Payment.findOneAndUpdate(
+        {
+          _id: payment._id,
+          paymentStatus: { $in: ['created', 'pending', 'failed'] }
+        },
+        {
+          $set: {
+            paymentStatus: 'paid',
+            paymentMethod,
+            paidAt: new Date()
+          }
+        },
+        { new: true }
+      );
+
+    if (!claimed) {
+
+      return res.status(409).json({
+        message: 'This payment is already being processed.'
+      });
+
+    }
+
+    payment.set(claimed.toObject());
+
+    const paidRental =
+      await Rental.findOneAndUpdate(
+        {
+          _id: rental._id,
+          status: { $in: ['payment_pending', 'agreement_accepted'] }
+        },
+        {
+          $set: {
+            status: 'payment_success',
+            paymentVerifiedAt: payment.paidAt
+          }
+        },
+        { new: true }
+      );
+
+    if (!paidRental) {
+
       console.error(
-        'Rental not found for payment:',
+        'Payment recorded but rental could not advance:',
         payment._id
       );
 
-    } else {
-        rental.status = 'payment_success';
-        await rental.save();
     }
+
+    await createNotification({
+      user: rental.tenant,
+      title: 'Payment Successful',
+      message: 'Your payment was received. Please confirm your booking to complete it.',
+      type: 'payment_update',
+      relatedEntityModel: 'Rental',
+      relatedEntityId: rental._id
+    });
+
+    await createNotification({
+      user: rental.landlord,
+      title: 'Payment Received',
+      message: 'The tenant has paid and will confirm the booking shortly.',
+      type: 'payment_update',
+      relatedEntityModel: 'Rental',
+      relatedEntityId: rental._id
+    });
 
 
     // --------------------------------------------------------
@@ -580,7 +851,7 @@ const processMockPayment = async (req, res) => {
               tenant.email,
               
             landlordName:
-              rental.landlord?.name || property.landlord?.name || 'Landlord',
+              (await User.findById(rental.landlord).select('name'))?.name || 'Landlord',
 
             rentalStartDate:
               rental.startDate,
@@ -1010,6 +1281,27 @@ const downloadInvoice = async (
 
       return res.status(403).json({
         message: 'You are not authorized to download this invoice.'
+      });
+
+    }
+
+
+    // --------------------------------------------------------
+    // INVOICE ONLY AFTER THE BOOKING IS CONFIRMED
+    // --------------------------------------------------------
+
+    const invoiceRental =
+      await Rental.findById(
+        payment.rental
+      ).select('status');
+
+    if (
+      !invoiceRental ||
+      !['confirmed', 'active', 'completed'].includes(invoiceRental.status)
+    ) {
+
+      return res.status(403).json({
+        message: 'The invoice becomes available once the booking is confirmed.'
       });
 
     }

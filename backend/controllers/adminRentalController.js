@@ -1,4 +1,12 @@
+const mongoose = require('mongoose');
+
 const Rental = require('../models/Rental');
+const User = require('../models/User');
+const Property = require('../models/Property');
+const { escapeRegex } = require('../utils/dates');
+
+const RENTAL_STATUSES = Object.keys(Rental.VALID_TRANSITIONS);
+const isId = (v) => typeof v === 'string' && mongoose.Types.ObjectId.isValid(v);
 
 const getAllRentals = async (req, res) => {
   try {
@@ -7,6 +15,7 @@ const getAllRentals = async (req, res) => {
       landlordId,
       tenantId,
       propertyId,
+      search,
       page = 1,
       limit = 20
     } = req.query;
@@ -14,19 +23,41 @@ const getAllRentals = async (req, res) => {
     const filter = {};
 
     if (status) {
+      if (!RENTAL_STATUSES.includes(status)) {
+        return res.status(400).json({ message: 'Invalid status filter' });
+      }
       filter.status = status;
     }
 
-    if (landlordId) {
-      filter.landlord = landlordId;
+    for (const [key, value, field] of [
+      ['landlordId', landlordId, 'landlord'],
+      ['tenantId', tenantId, 'tenant'],
+      ['propertyId', propertyId, 'property']
+    ]) {
+      if (value) {
+        if (!isId(value)) {
+          return res.status(400).json({ message: `Invalid ${key}` });
+        }
+        filter[field] = value;
+      }
     }
 
-    if (tenantId) {
-      filter.tenant = tenantId;
-    }
+    // Free-text search across tenant / landlord / property.
+    if (typeof search === 'string' && search.trim()) {
+      const re = new RegExp(escapeRegex(search.trim().slice(0, 100)), 'i');
 
-    if (propertyId) {
-      filter.property = propertyId;
+      const [users, properties] = await Promise.all([
+        User.find({ $or: [{ name: re }, { email: re }] }).select('_id').limit(200),
+        Property.find({ $or: [{ title: re }, { city: re }, { address: re }] }).select('_id').limit(200)
+      ]);
+
+      const userIds = users.map((u) => u._id);
+
+      filter.$or = [
+        { tenant: { $in: userIds } },
+        { landlord: { $in: userIds } },
+        { property: { $in: properties.map((p) => p._id) } }
+      ];
     }
 
     const pageNumber = Math.max(
@@ -133,38 +164,30 @@ const getRentalDetails = async (req, res) => {
 
 const getRentalStats = async (req, res) => {
   try {
-    const [
-      total,
-      pending,
-      active,
-      completed,
-      cancelled
-    ] = await Promise.all([
-      Rental.countDocuments(),
-
-      Rental.countDocuments({
-        status: 'pending'
-      }),
-
-      Rental.countDocuments({
-        status: 'active'
-      }),
-
-      Rental.countDocuments({
-        status: 'completed'
-      }),
-
-      Rental.countDocuments({
-        status: 'cancelled'
-      })
+    const grouped = await Rental.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
 
+    const byStatus = Object.fromEntries(
+      RENTAL_STATUSES.map((st) => [st, 0])
+    );
+
+    grouped.forEach((g) => {
+      byStatus[g._id] = g.count;
+    });
+
+    const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
+
+    // Top-level keys kept for the existing admin UI.
     return res.json({
       total,
-      pending,
-      active,
-      completed,
-      cancelled
+      pending: byStatus.pending,
+      active: byStatus.active,
+      completed: byStatus.completed,
+      cancelled: byStatus.cancelled,
+      confirmed: byStatus.confirmed,
+      conflict: byStatus.conflict,
+      byStatus
     });
 
   } catch (error) {

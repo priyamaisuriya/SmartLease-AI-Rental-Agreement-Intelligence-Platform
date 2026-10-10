@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 /**
  * Creates a notification in the database.
@@ -39,6 +40,33 @@ const createNotification = async (data) => {
     }
 };
 
+/**
+ * Sends the same notification to every active admin.
+ * Never throws: a notification problem must not break the main flow.
+ */
+const notifyAdmins = async ({ title, message, type = 'system', link, relatedEntityModel, relatedEntityId }) => {
+    try {
+        const admins = await User.find({ role: 'admin', isActive: true }).select('_id');
+
+        await Promise.all(
+            admins.map((admin) =>
+                createNotification({
+                    user: admin._id,
+                    title,
+                    message,
+                    type,
+                    link,
+                    relatedEntityModel,
+                    relatedEntityId
+                })
+            )
+        );
+    } catch (error) {
+        console.error('Error notifying admins:', error);
+    }
+};
+
 module.exports = {
-    createNotification
+    createNotification,
+    notifyAdmins
 };

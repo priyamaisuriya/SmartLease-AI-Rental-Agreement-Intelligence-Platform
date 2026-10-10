@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Ban, Trash2, CheckCircle, Home, MapPin, User, FileText, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Ban, CheckCircle, Home, MapPin, User, FileText, Image as ImageIcon } from 'lucide-react';
 import StatusBadge from '../../components/admin/StatusBadge';
 import api from '../../services/api';
 
@@ -52,6 +52,39 @@ const AdminPropertyDetails = () => {
     
     fetchPropertyDetails();
   }, [id]);
+
+  // Moderation: deactivate hides the listing from tenants; reactivate restores it.
+  const handleToggleListing = async () => {
+    const deactivating = property.status.toLowerCase() !== 'inactive';
+    let reason = '';
+
+    if (deactivating) {
+      const input = window.prompt(
+        `Deactivate "${property.title}"? It will be hidden from tenants and the landlord will be notified.
+
+Optional reason:`,
+        ''
+      );
+      if (input === null) return;
+      reason = input;
+    } else if (!window.confirm(`Reactivate "${property.title}"? It will be visible to tenants again.`)) {
+      return;
+    }
+
+    try {
+      setIsActionLoading(true);
+      const res = await api.patch(`/admin/properties/${id}/status`, {
+        status: deactivating ? 'inactive' : 'available',
+        reason,
+      });
+      const newStatus = res.data.property?.status || (deactivating ? 'inactive' : 'available');
+      setProperty((prev) => ({ ...prev, status: newStatus.charAt(0).toUpperCase() + newStatus.slice(1) }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update listing status');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   if (loading) {
     return <div className="p-8 text-center text-text-muted fade-in">Loading property details...</div>;
@@ -187,21 +220,23 @@ const AdminPropertyDetails = () => {
             </div>
             <div className="p-5 space-y-3">
               <p className="text-sm text-text-muted mb-4">
-                Note: Admin property modification is restricted. Status updates are handled by landlords.
+                Deactivating hides the listing from tenants and notifies the landlord. Listings with an active or confirmed booking cannot be deactivated.
               </p>
-              <button 
-                disabled={true}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-paper border border-border rounded-lg text-sm font-medium text-text-muted cursor-not-allowed opacity-70"
-              >
-                <Ban className="w-4 h-4" /> Suspend Listing
-              </button>
-              
-              <button 
-                disabled={true}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-paper border border-border rounded-lg text-sm font-medium text-text-muted cursor-not-allowed opacity-70"
-              >
-                <Trash2 className="w-4 h-4" /> Delete Listing
-              </button>
+              {property.status.toLowerCase() === 'rented' ? (
+                <p className="text-sm text-text-muted">This property is currently rented, so its status cannot be changed.</p>
+              ) : (
+                <button 
+                  onClick={handleToggleListing}
+                  disabled={isActionLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-ink hover:bg-paper-card transition-colors disabled:opacity-50"
+                >
+                  {property.status.toLowerCase() === 'inactive' ? (
+                    <><CheckCircle className="w-4 h-4" /> Reactivate Listing</>
+                  ) : (
+                    <><Ban className="w-4 h-4" /> Deactivate Listing</>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 ﻿const User = require('../models/User');
 const Property = require('../models/Property');
 const Rental = require('../models/Rental');
+const Payment = require('../models/Payment');
 const Agreement = require('../models/Agreement');
 const AIUsage = require('../models/AIUsage');
 const RentReminder = require('../models/RentReminder');
@@ -359,61 +360,77 @@ const getPropertyReport = async (req, res) => {
 
 const getRentalReport = async (req, res) => {
     try {
-        const [
-            total,
-            pending,
-            active,
-            completed,
-            cancelled
-        ] = await Promise.all([
-            Rental.countDocuments(),
-            Rental.countDocuments({
-                status: 'pending'
-            }),
-            Rental.countDocuments({
-                status: 'active'
-            }),
-            Rental.countDocuments({
-                status: 'completed'
-            }),
-            Rental.countDocuments({
-                status: 'cancelled'
-            })
-        ]);
+        const BOOKED = ['confirmed', 'active', 'completed'];
 
-        const rentStats =
-            await Rental.aggregate([
+        const [
+            grouped,
+            rentStats,
+            paymentStats
+        ] = await Promise.all([
+            Rental.aggregate([
+                { $group: { _id: '$status', count: { $sum: 1 } } }
+            ]),
+
+            // Only bookings that actually went through count towards financials.
+            Rental.aggregate([
+                { $match: { status: { $in: BOOKED } } },
                 {
                     $group: {
                         _id: null,
-                        totalMonthlyRent: {
-                            $sum: '$monthlyRent'
-                        },
-                        averageMonthlyRent: {
-                            $avg: '$monthlyRent'
-                        },
-                        totalSecurityDeposit: {
-                            $sum: '$securityDeposit'
-                        }
+                        totalMonthlyRent: { $sum: '$monthlyRent' },
+                        averageMonthlyRent: { $avg: '$monthlyRent' },
+                        totalSecurityDeposit: { $sum: '$securityDeposit' }
                     }
                 }
-            ]);
+            ]),
+
+            Payment.aggregate([
+                {
+                    $group: {
+                        _id: '$paymentStatus',
+                        count: { $sum: 1 },
+                        amount: { $sum: '$amount' }
+                    }
+                }
+            ])
+        ]);
+
+        const byStatus = Object.fromEntries(
+            Object.keys(Rental.VALID_TRANSITIONS).map((st) => [st, 0])
+        );
+
+        grouped.forEach((g) => {
+            byStatus[g._id] = g.count;
+        });
+
+        const total = Object.values(byStatus).reduce((x, y) => x + y, 0);
+
+        const payments = { paid: { count: 0, amount: 0 }, failed: { count: 0, amount: 0 }, open: { count: 0, amount: 0 } };
+
+        paymentStats.forEach((p) => {
+            const key = p._id === 'paid' ? 'paid' : p._id === 'failed' ? 'failed' : 'open';
+            payments[key].count += p.count;
+            payments[key].amount += p.amount;
+        });
 
         return res.json({
             summary: {
                 total,
-                pending,
-                active,
-                completed,
-                cancelled
+                pending: byStatus.pending,
+                active: byStatus.active,
+                completed: byStatus.completed,
+                cancelled: byStatus.cancelled,
+                confirmed: byStatus.confirmed,
+                conflict: byStatus.conflict,
+                byStatus
             },
-
             financials:
                 rentStats[0] || {
                     totalMonthlyRent: 0,
                     averageMonthlyRent: 0,
                     totalSecurityDeposit: 0
-                }
+                },
+            payments
         });
 
     } catch (err) {

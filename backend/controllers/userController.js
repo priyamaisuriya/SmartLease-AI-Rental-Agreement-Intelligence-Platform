@@ -2,6 +2,9 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Property = require('../models/Property');
 const Agreement = require('../models/Agreement');
+const Rental = require('../models/Rental');
+const ActivityLog = require('../models/ActivityLog');
+const mongoose = require('mongoose');
 
 
 // ============================================================
@@ -10,17 +13,22 @@ const Agreement = require('../models/Agreement');
 // ADMIN ONLY
 // ============================================================
 
+const SENSITIVE_FIELDS = '-password -resetPasswordToken -resetPasswordExpires';
+
 const getUsers = async (req, res) => {
-
     try {
-
+        // Only counts are computed in the database; the documents themselves
+        // (agreements carry their full extracted text) are never loaded.
         const users = await User.aggregate([
             {
                 $lookup: {
                     from: 'properties',
-                    localField: '_id',
-                    foreignField: 'landlord',
-                    as: 'properties'
+                    let: { userId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$landlord', '$$userId'] } } },
+                        { $count: 'n' }
+                    ],
+                    as: 'propertiesAgg'
                 }
             },
             {
@@ -37,26 +45,25 @@ const getUsers = async (req, res) => {
                                     ]
                                 }
                             }
-                        }
+                        },
+                        { $count: 'n' }
                     ],
-                    as: 'agreements'
-                }
-            },
-            {
-                $project: {
-                    password: 0
+                    as: 'agreementsAgg'
                 }
             },
             {
                 $addFields: {
-                    propertiesCount: { $size: '$properties' },
-                    agreementsCount: { $size: '$agreements' }
+                    propertiesCount: { $ifNull: [{ $arrayElemAt: ['$propertiesAgg.n', 0] }, 0] },
+                    agreementsCount: { $ifNull: [{ $arrayElemAt: ['$agreementsAgg.n', 0] }, 0] }
                 }
             },
             {
                 $project: {
-                    properties: 0,
-                    agreements: 0
+                    password: 0,
+                    resetPasswordToken: 0,
+                    resetPasswordExpires: 0,
+                    propertiesAgg: 0,
+                    agreementsAgg: 0
                 }
             },
             {
@@ -67,11 +74,61 @@ const getUsers = async (req, res) => {
         return res.json(users);
 
     } catch (err) {
-
         console.error(
             'Get users error:',
             err.message
         );
+
+        return res.status(500).json({
+            message: 'Server Error'
+        });
+    }
+};
+
+
+// ============================================================
+// GET ONE USER (with real counts and recent activity)
+// GET /api/users/:id
+// ADMIN ONLY
+// ============================================================
+
+const getUserById = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+
+        const user = await User.findById(req.params.id).select(SENSITIVE_FIELDS);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const [
+            propertiesCount,
+            agreementsCount,
+            rentalsCount,
+            recentActivity
+        ] = await Promise.all([
+            Property.countDocuments({ landlord: user._id }),
+            Agreement.countDocuments({ $or: [{ landlord: user._id }, { tenant: user._id }] }),
+            Rental.countDocuments({ $or: [{ landlord: user._id }, { tenant: user._id }] }),
+            ActivityLog.find({ user: user._id })
+                .sort({ createdAt: -1 })
+                .limit(8)
+                .select('action module description status createdAt')
+        ]);
+
+        return res.json({
+            ...user.toObject(),
+            propertiesCount,
+            agreementsCount,
+            rentalsCount,
+            recentActivity
+        });
+
+    } catch (err) {
+        console.error('Get user error:', err.message);
 
         return res.status(500).json({
             message: 'Server Error'
@@ -86,6 +143,18 @@ const getUsers = async (req, res) => {
 // ADMIN ONLY
 // ============================================================
 
+// Checked on the plain-text password: the model's minlength only ever sees
+// the bcrypt hash, so it cannot enforce this.
+const passwordProblem = (pw) => {
+    if (typeof pw !== 'string' || pw.length < 8) {
+        return 'Password must be at least 8 characters long';
+    }
+    if (pw.length > 128) {
+        return 'Password cannot exceed 128 characters';
+    }
+    return null;
+};
+
 const createUser = async (req, res) => {
 
     const {
@@ -98,11 +167,21 @@ const createUser = async (req, res) => {
 
     try {
 
-        if (!name || !email || !password) {
+        if (
+            typeof name !== 'string' || !name.trim() ||
+            typeof email !== 'string' || !email.trim() ||
+            typeof password !== 'string' || !password
+        ) {
             return res.status(400).json({
                 message:
                     'Name, email and password are required'
             });
+        }
+
+        const pwProblem = passwordProblem(password);
+
+        if (pwProblem) {
+            return res.status(400).json({ message: pwProblem });
         }
 
 
@@ -127,15 +206,14 @@ const createUser = async (req, res) => {
          *
          * tenant
          * landlord
-         * property_manager
          *
          * Another admin is not created through this route.
+         * (property_manager is not a role in the User schema.)
          */
 
         const allowedRoles = [
             'tenant',
-            'landlord',
-            'property_manager'
+            'landlord'
         ];
 
         const selectedRole =
@@ -149,7 +227,7 @@ const createUser = async (req, res) => {
             email: normalizedEmail,
             password,
             role: selectedRole,
-            phone: phone ? phone.trim() : ''
+            phone: typeof phone === 'string' ? phone.trim() : ''
         });
 
 
@@ -260,17 +338,13 @@ const updateUser = async (req, res) => {
             }
 
 
-            // Normal user can change own password
-            if (password) {
-
-                const salt =
-                    await bcrypt.genSalt(10);
-
-                userFields.password =
-                    await bcrypt.hash(
-                        password,
-                        salt
-                    );
+            // Passwords are changed through PUT /api/auth/change-password,
+            // which verifies the current password first.
+            if (password !== undefined) {
+                return res.status(400).json({
+                    message:
+                        'Use the change-password option to update your password'
+                });
             }
         }
 
@@ -294,7 +368,7 @@ const updateUser = async (req, res) => {
             // Admin can change email
             if (
                 typeof email === 'string' &&
-                email.trim() !== targetUser.email
+                email.trim().toLowerCase() !== targetUser.email
             ) {
 
                 const normalizedEmail =
@@ -333,7 +407,6 @@ const updateUser = async (req, res) => {
                 const allowedRoles = [
                     'tenant',
                     'landlord',
-                    'property_manager',
                     'admin'
                 ];
 
@@ -350,7 +423,13 @@ const updateUser = async (req, res) => {
 
 
             // Admin can reset another user's password
-            if (password) {
+            if (password !== undefined) {
+
+                const pwProblem = passwordProblem(password);
+
+                if (pwProblem) {
+                    return res.status(400).json({ message: pwProblem });
+                }
 
                 const salt =
                     await bcrypt.genSalt(10);
@@ -563,6 +642,7 @@ const uploadAvatar = async (req, res) => {
 
 module.exports = {
     getUsers,
+    getUserById,
     createUser,
     updateUser,
     updateUserStatus,

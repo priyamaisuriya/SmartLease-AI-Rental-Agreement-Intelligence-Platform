@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Ban, Trash2, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, Edit, Ban, CheckCircle, X } from 'lucide-react';
 import StatusBadge from '../../components/admin/StatusBadge';
-import { recentActivity } from '../../data/adminMockData';
 import api from '../../services/api';
 
 const UserDetails = () => {
@@ -21,15 +20,17 @@ const UserDetails = () => {
     const fetchUser = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/users');
-        const foundUser = res.data.find(u => u._id === id);
+        const res = await api.get(`/users/${id}`);
+        const foundUser = res.data;
         
         if (foundUser) {
           setUser({
             ...foundUser,
             joined: new Date(foundUser.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            properties: foundUser.properties?.length || 0,
-            agreements: 0,
+            properties: foundUser.propertiesCount || 0,
+            agreements: foundUser.agreementsCount || 0,
+            rentals: foundUser.rentalsCount || 0,
+            activity: foundUser.recentActivity || [],
             status: foundUser.isActive ? 'Active' : 'Inactive',
             role: foundUser.role
           });
@@ -44,7 +45,7 @@ const UserDetails = () => {
         }
       } catch (err) {
         console.error('Failed to load user details:', err);
-        setError('Failed to load user details');
+        setError(err.response?.status === 404 ? 'User not found' : 'Failed to load user details');
       } finally {
         setLoading(false);
       }
@@ -61,19 +62,6 @@ const UserDetails = () => {
       setUser(prev => ({ ...prev, status: prev.status === 'Active' ? 'Inactive' : 'Active' }));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update status');
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    try {
-      setIsActionLoading(true);
-      await api.delete(`/users/${id}`);
-      navigate('/admin/users');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user');
     } finally {
       setIsActionLoading(false);
     }
@@ -184,14 +172,7 @@ const UserDetails = () => {
                   <><CheckCircle className="w-4 h-4" /> Activate Account</>
                 )}
               </button>
-              
-              <button 
-                onClick={handleDelete}
-                disabled={isActionLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-ink hover:bg-paper-card transition-colors disabled:opacity-50"
-              >
-                <Trash2 className="w-4 h-4" /> Delete User
-              </button>
+
             </div>
           </div>
         </div>
@@ -203,15 +184,17 @@ const UserDetails = () => {
               <h3 className="font-semibold text-ink">Recent Activity</h3>
             </div>
             <div className="divide-y divide-border p-6 space-y-4">
-              {recentActivity.slice(0, 4).map((activity, idx) => (
-                <div key={idx} className="flex gap-4 pt-4 first:pt-0 relative">
-                  {idx !== 3 && <div className="absolute left-5 top-10 bottom-0 w-px bg-border"></div>}
+              {user.activity.length === 0 ? (
+                <p className="text-sm text-text-muted">No recorded activity for this user yet.</p>
+              ) : user.activity.map((activity, idx) => (
+                <div key={activity._id || idx} className="flex gap-4 pt-4 first:pt-0 relative">
+                  {idx !== user.activity.length - 1 && <div className="absolute left-5 top-10 bottom-0 w-px bg-border"></div>}
                   <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center z-10 border border-border">
                     <span className="w-3 h-3 rounded-full bg-gold-deep"></span>
                   </div>
                   <div className="pb-4">
-                    <p className="text-sm font-medium text-ink">{activity.desc}</p>
-                    <p className="text-xs text-text-muted mt-1">{activity.time}</p>
+                    <p className="text-sm font-medium text-ink">{activity.description || activity.action}</p>
+                    <p className="text-xs text-text-muted mt-1">{new Date(activity.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
@@ -270,7 +253,6 @@ const UserDetails = () => {
                 >
                   <option value="tenant">Tenant</option>
                   <option value="landlord">Landlord</option>
-                  <option value="property_manager">Property Manager</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

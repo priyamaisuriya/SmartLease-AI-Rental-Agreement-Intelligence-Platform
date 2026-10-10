@@ -47,7 +47,7 @@ const Rentals = () => {
       // Refresh rentals
       const response = await api.get('/rentals/my-rentals');
       setRentals(response.data.rentals || []);
-      alert('Booking confirmed (Mock Payment Successful).');
+      alert('Booking confirmed.');
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to confirm booking.');
     }
@@ -352,12 +352,21 @@ const Rentals = () => {
                           </button>
                         )}
 
-                        {r.status === 'agreement_accepted' && (
+                        {(r.status === 'agreement_accepted' || r.status === 'payment_pending') && (
+                          <Link
+                            to={`/properties/${property._id}`}
+                            className="rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700"
+                          >
+                            Go to Payment
+                          </Link>
+                        )}
+
+                        {r.status === 'payment_success' && (
                           <button
                             onClick={() => handleConfirmBooking(r._id)}
                             className="rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700"
                           >
-                            Pay & Confirm
+                            Confirm Booking
                           </button>
                         )}
 

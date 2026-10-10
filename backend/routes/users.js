@@ -8,6 +8,7 @@ const upload = require('../middleware/upload');
 
 const {
   getUsers,
+  getUserById,
   createUser,
   updateUser,
   updateUserStatus,
@@ -22,6 +23,15 @@ router.get(
   auth,
   adminOnly,
   getUsers
+);
+
+
+// Get one user (admin) with counts and recent activity
+router.get(
+  '/:id',
+  auth,
+  adminOnly,
+  getUserById
 );
 
 
