@@ -370,6 +370,43 @@ const Rentals = () => {
                           </button>
                         )}
 
+                        {['confirmed', 'active', 'completed'].includes(r.status) && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const statusRes = await api.get(`/payments/status/${r._id}`);
+                                if (!statusRes.data?.hasPayment || !statusRes.data?.payment?.invoiceNumber) {
+                                  alert('Invoice is not available yet.');
+                                  return;
+                                }
+                                
+                                const payment = statusRes.data.payment;
+                                
+                                const response = await api.get(
+                                  `/payments/invoice/${payment.paymentId}`,
+                                  { responseType: 'blob' }
+                                );
+
+                                const blob = new Blob([response.data], { type: 'application/pdf' });
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `${payment.invoiceNumber}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                link.parentNode.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                              } catch (err) {
+                                console.error('Failed to download invoice:', err);
+                                alert('Failed to download invoice.');
+                              }
+                            }}
+                            className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+                          >
+                            Download Invoice
+                          </button>
+                        )}
+
                         <button
                           onClick={() =>
                             alert(
